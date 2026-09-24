@@ -58,7 +58,7 @@
   "dependencies": {
     "@codemirror/lang-json": "<7.0.0",
     "@emotion/react": "^11.10.6",
-    "@types/chrome": "0.0.100",
+    "@types/chrome": "0.3.0",
     "@uiw/react-codemirror": "<5.0.0",
     "jsonc-parser": "<3.3.0",
     "jsonschema": "<2.0.0",
