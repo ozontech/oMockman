@@ -1,0 +1,54 @@
+{
+  "manifest_version": 2,
+  "name": "Mockman",
+  "description": "Mock API responses directly from a Logs / Mocks panel in DevTools.",
+  "version": "2.3.3",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{76a6f0da-6083-484c-848b-7488e124056f}",
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "icons": {
+    "16": "public/icons/mockman-16.png",
+    "48": "public/icons/mockman-48.png",
+    "128": "public/icons/mockman-128.png",
+    "512": "public/icons/mockman-512.png"
+  },
+  "browser_action": {
+    "default_icon": "public/icons/mockman-16.png",
+    "default_popup": "public/html/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/content_script.js",
+        "js/inject.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "devtools_page": "public/html/devtool.html",
+  "background": {
+    "scripts": [
+      "js/background.js"
+    ]
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "webRequest",
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    "js/inject.js"
+  ]
+}

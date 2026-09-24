@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+      - name: Tag matches package.json and both manifests
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for f in package.json public/chrome/manifest.json public/firefox/manifest.json; do
+            v=$(node -p "require('./$f').version")
+            [ "$v" = "$tag" ] || { echo "::error file=$f::version $v does not match tag $tag"; exit 1; }
+          done
+
+      - name: Build packages
+        run: |
+          npm run build:chrome
+          npm run build:firefox
+          (cd dist/chrome && zip -qr "../../omockman-chrome-${GITHUB_REF_NAME}.zip" .)
+          (cd dist/firefox && zip -qr "../../omockman-firefox-${GITHUB_REF_NAME}.xpi" .)
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          [ -s release-notes.md ] || echo "See CHANGELOG.md." > release-notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            omockman-chrome-${{ github.ref_name }}.zip
+            omockman-firefox-${{ github.ref_name }}.xpi

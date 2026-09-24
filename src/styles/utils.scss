@@ -1,0 +1,357 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    background: var(--bg);
+    color: var(--text);
+    transition: background .3s, color .3s;
+}
+
+body.mm-theme-anim,
+body.mm-theme-anim * {
+    transition: background-color .3s ease, color .3s ease, border-color .3s ease !important;
+}
+
+.p-relative {
+    position: relative;
+}
+
+.p-absolute {
+    position: absolute;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+
+.justify-content-between {
+    justify-content: space-between;
+}
+
+.justify-content-end {
+    justify-content: flex-end;
+}
+
+.justify-content-start {
+    justify-content: flex-start;
+}
+
+.flex-shrink {
+    flex-shrink: 0;
+}
+
+.flex-grow {
+    flex-grow: 2;
+}
+
+.mr-2 {
+    margin-right: 2px;
+}
+
+.pr-2 {
+    padding-right: 2px;
+}
+
+.ml-2 {
+    margin-left: 2px;
+}
+
+.pl-2 {
+    padding-left: 2px;
+}
+
+.mt-2 {
+    margin-top: 2px;
+}
+
+.pt-2 {
+    padding-top: 2px;
+}
+
+.mb-2 {
+    margin-bottom: 2px;
+}
+
+.pb-2 {
+    padding-bottom: 2px;
+}
+
+.mr-4 {
+    margin-right: 4px;
+}
+
+.pr-4 {
+    padding-right: 4px;
+}
+
+.ml-4 {
+    margin-left: 4px;
+}
+
+.pl-4 {
+    padding-left: 4px;
+}
+
+.mt-4 {
+    margin-top: 4px;
+}
+
+.pt-4 {
+    padding-top: 4px;
+}
+
+.mb-4 {
+    margin-bottom: 4px;
+}
+
+.pb-4 {
+    padding-bottom: 4px;
+}
+
+.mr-8 {
+    margin-right: 8px;
+}
+
+.pr-8 {
+    padding-right: 8px;
+}
+
+.ml-8 {
+    margin-left: 8px;
+}
+
+.pl-8 {
+    padding-left: 8px;
+}
+
+.mt-8 {
+    margin-top: 8px;
+}
+
+.pt-8 {
+    padding-top: 8px;
+}
+
+.mb-8 {
+    margin-bottom: 8px;
+}
+
+.pb-8 {
+    padding-bottom: 8px;
+}
+
+.mr-16 {
+    margin-right: 16px;
+}
+
+.pr-16 {
+    padding-right: 16px;
+}
+
+.ml-16 {
+    margin-left: 16px;
+}
+
+.pl-16 {
+    padding-left: 16px;
+}
+
+.mt-16 {
+    margin-top: 16px;
+}
+
+.pt-16 {
+    padding-top: 16px;
+}
+
+.mb-16 {
+    margin-bottom: 16px;
+}
+
+.pb-16 {
+    padding-bottom: 16px;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.mm-hover-dim {
+    transition: filter .15s;
+}
+
+.mm-hover-dim:hover {
+    filter: brightness(.85);
+}
+
+body.dark .mm-hover-dim:hover {
+    filter: brightness(1.15);
+}
+
+.ui.segment {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.ui.fluid.container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+.ui.table {
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+.ui.table thead th {
+    border-radius: 0 !important;
+}
+
+.ui.segment+.ui.segment {
+    margin-top: 0 !important;
+}
+
+body.dark .ui.segment {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+}
+
+body.dark .ui.inverted.input>input {
+    background: #343636;
+    color: #f5f6fa;
+    border-color: #343636;
+}
+
+body.dark .ui.inverted.input.icon>i.icon {
+    color: #9da0a6;
+}
+
+body.dark .ui.inverted.input>input::placeholder {
+    color: #7c7f83;
+}
+
+body.dark .ui.inverted.basic.button,
+body.dark .ui.inverted.basic.buttons .button,
+body.dark .ui.basic.inverted.button,
+body.dark .ui.basic.buttons .inverted.button,
+body.dark .ui.inverted.basic.icon.button,
+body.dark .ui.basic.inverted.icon.button,
+body.dark .ui.inverted.basic.labeled.button,
+body.dark .ui.basic.inverted.labeled.button,
+body.dark .ui.inverted.compact.button,
+body.dark .ui.compact.inverted.button {
+    box-shadow: 0 0 0 1px currentColor inset !important;
+}
+
+body.dark .ui.inverted.input>input,
+body.dark .ui.inverted.basic.input>input,
+body.dark .ui.input.inverted>input {
+    border: 1px solid currentColor !important;
+    box-shadow: none !important;
+}
+
+.ui.mini.button,
+.ui.mini.buttons .button,
+.ui.mini.buttons .or {
+    font-size: .82rem !important;
+}
+
+.ui.mini.button.mm-toggle-mocking-btn {
+    font-size: .95rem !important;
+}
+
+body.dark .ui.inverted.basic.button.red,
+body.dark .ui.basic.inverted.button.red {
+    color: #db2828 !important;
+}
+
+body.dark .ui.inverted.basic.button.green,
+body.dark .ui.basic.inverted.button.green {
+    color: #21ba45 !important;
+}
+
+body.dark .ui.inverted.pointing.secondary.menu .item,
+body.dark .ui.pointing.secondary.inverted.menu .item {
+    border-bottom-width: 1px !important;
+}
+
+.header-root.ui.segment {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+body>*:first-child {
+    margin-top: 0 !important;
+}
+
+@keyframes mmModalIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mmModalOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(10px); }
+}
+
+@keyframes mmDimmerIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mmDimmerOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+// Shared modal animation (env, AI etc.): Semantic's transition is disabled,
+// so modals animate through enter/leave classes instead.
+.ui.modal.mm-modal.mm-modal-enter {
+  animation: mmModalIn 180ms ease;
+  will-change: transform, opacity;
+}
+
+.ui.modal.mm-modal.mm-modal-leave {
+  animation: mmModalOut 180ms ease forwards;
+  will-change: transform, opacity;
+}
+
+.ui.dimmer.mm-modal-dimmer.mm-modal-enter {
+  animation: mmDimmerIn 180ms ease;
+}
+
+.ui.dimmer.mm-modal-dimmer.mm-modal-leave {
+  animation: mmDimmerOut 180ms ease forwards;
+}

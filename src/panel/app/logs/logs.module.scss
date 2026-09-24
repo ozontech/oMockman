@@ -1,0 +1,68 @@
+.urlCell {
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: left;
+}
+
+.urlCopyText {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition: text-decoration-color 120ms ease, opacity 120ms ease;
+}
+
+.urlCopyText:hover {
+  text-decoration-color: currentColor;
+  opacity: 0.9;
+}
+
+.statusStrong {
+  font-weight: 500;
+}
+
+.leftHeader {
+  text-align: left;
+}
+
+.counterWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #e8f4ff;
+  color: #1e70bf;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.counterDark {
+  background: #203043;
+  color: #7ec0ff;
+}
+
+.actionDeleteBtn {
+  height: 29.52px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px !important;
+  margin-left: 2px !important;
+}
+
+.actionDeleteIcon {
+  margin: 0 !important;
+}
+

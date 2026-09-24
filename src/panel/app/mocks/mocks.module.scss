@@ -1,0 +1,348 @@
+.textWrap {
+	word-break: normal;
+	overflow-wrap: break-word;
+	white-space: normal;
+	max-width: 100%;
+	overflow: hidden;
+	position: relative;
+	text-align: left;
+}
+
+.dndGhost {
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 999999;
+	pointer-events: none;
+	opacity: 0.95;
+	transform: translate3d(-10000px, -10000px, 0);
+	filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
+}
+
+.dndGhostTable {
+	border-collapse: collapse;
+	table-layout: fixed;
+	background: var(--bg);
+}
+
+.dndDraggingSource :global(td) {
+	opacity: 0.35;
+}
+
+.textWrapLeft {
+	word-wrap: break-word;
+	word-break: break-all;
+	white-space: normal;
+	max-width: 100%;
+	overflow: hidden;
+	text-align: left;
+}
+
+.urlCopyText {
+	cursor: pointer;
+	text-decoration: underline;
+	text-decoration-color: transparent;
+	text-underline-offset: 2px;
+	transition: text-decoration-color 120ms ease, opacity 120ms ease;
+}
+
+.urlCopyText:hover {
+	text-decoration-color: currentColor;
+	opacity: 0.9;
+}
+
+.cellCenter {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+}
+
+.smallToggle {
+	transform: scale(0.8);
+	transform-origin: center;
+}
+
+.mockingBtn {
+	border-radius: 999px !important;
+	padding: 4px 10px !important;
+	font-weight: 600 !important;
+	border: none !important;
+	font-size: .88rem !important;
+	white-space: nowrap !important;
+}
+
+:global(.ui.button.mini).mockingBtn,
+:global(.ui.mini.buttons) .mockingBtn {
+	font-size: .88rem !important;
+}
+
+.mockingBtn.on {
+	background: #21ba45 !important;
+	color: #ffffff !important;
+}
+
+.mockingBtn.off {
+	background: #db2828 !important;
+	color: #ffffff !important;
+}
+
+body.dark .mockingBtn.on {
+	background: #1b5e20 !important;
+	color: #ffffff !important;
+}
+
+body.dark .mockingBtn.off {
+	background: #a05259 !important;
+	color: #ffffff !important;
+}
+
+.mockingBtn :global(.content) {
+	font-size: 14px !important;
+	font-weight: 400 !important;
+	white-space: nowrap !important;
+}
+
+.allMockingBtn {
+	width: 160px !important;
+	min-width: 160px !important;
+	max-width: 160px !important;
+	padding: 4px 6px !important;
+}
+
+.allMockingBtn :global(.content) {
+	font-size: 12px !important;
+}
+
+.collectionMockingBtn {
+	width: 78px !important;
+	min-width: 78px !important;
+	max-width: 78px !important;
+	white-space: nowrap !important;
+	line-height: 1 !important;
+	padding: 4px 6px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.collectionMockingBtn :global(.content) {
+	white-space: nowrap !important;
+	line-height: 1 !important;
+}
+
+.collectionToggleCell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+}
+
+.collectionMetaRow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+}
+
+.collectionNameCell {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	font-weight: 600;
+}
+
+.collectionNameMain {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+}
+
+.collectionNameLabel {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	flex: 1;
+}
+
+.collectionNameText {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.collectionNameLabel :global(.icon) {
+	margin: 0 !important;
+	line-height: 1 !important;
+	vertical-align: middle !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+}
+
+.collectionNameEditBtn {
+	margin-left: 2px !important;
+}
+
+.collectionNameControls {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.collectionNameEditWrap {
+	flex: 1;
+}
+
+.collectionNameEditWrap :global(.field) {
+	margin: 0 !important;
+	flex: 1;
+	min-width: 0;
+}
+
+.collectionNameEditWrap :global(.ui.input) {
+	width: 100% !important;
+}
+
+.collectionNameInput {
+	width: 100% !important;
+}
+
+.collectionNameInput :global(input) {
+	text-align: left !important;
+}
+
+.collectionLeftCell {
+	position: relative;
+}
+
+.leftHeader {
+	text-align: left;
+}
+
+/* level 1 */
+:global(tr[data-row-type='collection'][data-level='1']) .textWrap,
+:global(tr[data-row-type='mock'][data-level='1']) .textWrap {
+	padding-left: 18px !important;
+}
+
+/* level 2 */
+:global(tr[data-row-type='collection'][data-level='2']) .textWrap,
+:global(tr[data-row-type='mock'][data-level='2']) .textWrap {
+	padding-left: 36px !important;
+}
+
+/* level 3 */
+:global(tr[data-row-type='collection'][data-level='3']) .textWrap,
+:global(tr[data-row-type='mock'][data-level='3']) .textWrap,
+:global(tr[data-row-type='collection'][data-level='4']) .textWrap,
+:global(tr[data-row-type='mock'][data-level='4']) .textWrap {
+	padding-left: 54px !important;
+}
+
+:global(tr[data-row-type='collection'][data-level='1']) .collectionLeftCell::before,
+:global(tr[data-row-type='collection'][data-level='2']) .collectionLeftCell::before,
+:global(tr[data-row-type='collection'][data-level='3']) .collectionLeftCell::before,
+:global(tr[data-row-type='collection'][data-level='4']) .collectionLeftCell::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 6px;
+	width: 0;
+	border-left: 2px solid #4a90e2;
+	z-index: 0;
+}
+
+:global(tr[data-row-type='collection'][data-level='2']) .collectionLeftCell::before {
+	box-shadow: 18px 0 0 0 #4a90e2;
+}
+
+:global(tr[data-row-type='collection'][data-level='3']) .collectionLeftCell::before {
+	box-shadow: 18px 0 0 0 #4a90e2,
+	36px 0 0 0 #4a90e2;
+}
+
+:global(tr[data-row-type='collection'][data-level='4']) .collectionLeftCell::before {
+	box-shadow: 18px 0 0 0 #4a90e2,
+	36px 0 0 0 #4a90e2,
+	54px 0 0 0 #4a90e2;
+}
+
+.collectionCounter {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 18px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #e8f4ff;
+	color: #1e70bf;
+	font-weight: 600;
+	font-size: 11px;
+}
+
+.collectionCounterDark {
+	background: #203043;
+	color: #7ec0ff;
+}
+
+.activeMockIcon {
+	cursor: pointer;
+	opacity: 0.9;
+	margin: 0 !important;
+	vertical-align: middle !important;
+	line-height: 1 !important;
+	font-size: 14px !important;
+}
+
+.activeMockIcon:hover {
+	opacity: 1;
+}
+
+.lightningSlot {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	min-width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	height: 100%;
+}
+
+.toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.treeContainer {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: 4px 0;
+}
+
+:global(tr[data-row-type='mock'][data-collection-id]:not([data-collection-id='']):not(.mm-drop-target)) td {
+	background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+:global(body.dark tr[data-row-type='mock'][data-collection-id]:not([data-collection-id='']):not(.mm-drop-target)) td {
+	background-color: rgba(255, 255, 255, 0.08) !important;
+}
+

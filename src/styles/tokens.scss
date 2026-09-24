@@ -1,0 +1,21 @@
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --muted-text: #888888;
+  --border: #e0e1e2;
+  --border-strong: #d4d4d5;
+  --accent-blue: #1678c2;
+}
+
+body.dark {
+  --bg: #222222;
+  --text: #ffffff;
+  --muted-text: #aaaaaa;
+  --border: #444444;
+  --border-strong: #ffffff;
+}
+
+.mm-text { color: var(--text); }
+.mm-bg { background: var(--bg); }
+.mm-border { border-color: var(--border); }
+

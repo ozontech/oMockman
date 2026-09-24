@@ -1,0 +1,11 @@
+.row {
+  align-items: flex-end;
+}
+
+.fixed80 {
+  flex: 0 0 80px;
+}
+
+.darkInput :global(.ui.input > input) {
+  background-color: #222222 !important;
+}

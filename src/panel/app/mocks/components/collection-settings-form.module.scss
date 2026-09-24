@@ -1,0 +1,31 @@
+.modal {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+}
+
+.modal :global(.header) {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+	border-bottom: 1px solid var(--border) !important;
+}
+
+.modal :global(.content) {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+}
+
+.modal :global(.actions) {
+	background: var(--bg) !important;
+	border-top: 1px solid var(--border) !important;
+}
+
+.modal :global(label),
+.modal :global(.ui.checkbox label) {
+	color: var(--text) !important;
+}
+
+.darkField :global(.ui.input > input) {
+	background-color: var(--bg) !important;
+	color: var(--text) !important;
+	border-color: var(--border) !important;
+}

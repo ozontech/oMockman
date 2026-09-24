@@ -1,0 +1,62 @@
+.statusField {
+  :global(.ui.buttons) {
+    margin: 0;
+  }
+}
+
+.statusBtn {
+  transition: none !important;
+  box-shadow: none !important;
+}
+
+.statusBtnLight {
+  background-color: #ffffff !important;
+  border-color: #d4d4d5 !important;
+  color: #000000 !important;
+}
+
+.statusBtnDark {
+  background-color: #222222 !important;
+  border-color: #444 !important;
+  color: #ffffff !important;
+}
+
+.statusActiveOn {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: #ffffff !important;
+}
+
+.statusInactiveOn {
+  background-color: #e06c75 !important;
+  border-color: #e06c75 !important;
+  color: #ffffff !important;
+}
+
+.methodField {
+  flex: 0 0 auto;
+  max-width: 350px;
+}
+
+.methodBtn {
+  min-width: 45px !important;
+  transition: none !important;
+  box-shadow: none !important;
+}
+
+.methodBtnLight {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #d4d4d5 !important;
+}
+
+.methodBtnDark {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+  border-color: #444 !important;
+}
+
+.methodBtnActive {
+  background-color: #2185d0 !important;
+  color: #ffffff !important;
+}

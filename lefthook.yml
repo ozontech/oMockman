@@ -1,0 +1,22 @@
+# Git hooks. See https://github.com/evilmartians/lefthook
+# Local overrides go into lefthook-local.yml.
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts}'
+      run: npx eslint --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+    stylelint:
+      glob: '*.{css,scss}'
+      run: npx stylelint --fix {staged_files}
+      stage_fixed: true
+    typescript:
+      glob: '*.{ts,tsx}'
+      run: npx tsc --noEmit
+
+pre-push:
+  commands:
+    tests:
+      run: npm test

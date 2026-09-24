@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "Mockman",
+  "description": "Mock API responses directly from a Logs / Mocks panel in Chrome DevTools.",
+  "version": "2.3.3",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApLUSC7mCFHdEJISviY8I6mntpv0xElxwq+ZJBLSL4rkfnh451LsQgIr1ToX4wERo350cL2f7KA1+iG7N1T9BwVEZhQ5Oqh7++IchPomzPH5ADYYPusMgd+P4+YB27wr67Sl5uEUwjCI6fZVOkjTfak819f6pOuGB6DlZMvOr+Rx7OJuW9w1BHHOPJGzBXW0/MTh83oBMKP9myJO8vK8Nmm6nIP2YTUMhEyMbqyI2esaD1h0Hv8IvwgXVq+VNqhN5C7PZ9+lN6jjI03z/HX6rLySfa8lIR4ur7icJGGLMakuuQwclMFq8pnxBT0Y1cHufmhgkxEcMkIedveSvTRVLjQIDAQAB",
+  "icons": {
+    "16": "public/icons/mockman-16.png",
+    "48": "public/icons/mockman-48.png",
+    "128": "public/icons/mockman-128.png",
+    "512": "public/icons/mockman-512.png"
+  },
+  "action": {
+    "default_icon": "public/icons/mockman-16.png",
+    "default_popup": "public/html/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/content_script.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/inject.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    }
+  ],
+  "devtools_page": "public/html/devtool.html",
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "js/inject.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+.cmHost :global(.cm-line) {
+	white-space: pre-wrap !important;
+	word-break: break-all;
+}
+
+.cmHost :global(.cm-editor),
+.cmHost :global(.cm-content) {
+	background: var(--bg) !important;
+}
+
+.cmHost :global(.cm-editor) {
+	border-radius: 4px;
+	overflow: visible;
+}
+
+.cmHost :global(.cm-tooltip.cm-tooltip-lint) {
+	z-index: 30;
+	max-width: min(560px, calc(100vw - 32px));
+}
+
+.cmHost :global(.cm-tooltip.cm-tooltip-lint ul) {
+	max-height: 240px;
+	overflow: auto;
+}
+
+.cmHost :global(.cm-editor .cm-selectionBackground),
+.cmHost :global(.cm-editor .cm-content ::selection) {
+	background-color: #b3d4fc !important;
+}
+
+.cmHost :global(.cm-editor.cm-focused .cm-selectionBackground) {
+	background-color: #316ac5 !important;
+}
+
+body.dark .cmHost :global(.cm-editor .cm-selectionBackground),
+body.dark .cmHost :global(.cm-editor .cm-content ::selection) {
+	background-color: #264f78 !important;
+}
+
+body.dark .cmHost :global(.cm-editor.cm-focused .cm-selectionBackground) {
+	background-color: #264f78 !important;
+}
+
+.cmHost :global(.cm-editor .cm-content ::selection) {
+	color: inherit !important;
+}
+
+body.dark .cmHost :global(.cm-editor .cm-content ::selection) {
+	color: inherit !important;
+}
+
+.cmHost :global(.cm-selectionMatch) {
+	background-color: #99ff99 !important;
+}
+
+body.dark .cmHost :global(.cm-selectionMatch) {
+	background-color: #005500 !important;
+}
+
+.cmHost :global(.cm-panels) {
+	display: none !important;
+}
+
+.findBar {
+	width: 100%;
+	box-sizing: border-box;
+	position: sticky;
+	top: var(--mm-find-sticky-top, 0px);
+	z-index: 9;
+	padding: 8px;
+	background: #ffffff;
+	border-bottom: 1px solid #d4d4d5;
+}
+
+.findRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.findInput {
+	height: 32px;
+	padding: 0 10px;
+	border-radius: 6px;
+	border: 1px solid #d4d4d5;
+	background: #ffffff;
+	color: #000000;
+	min-width: 240px;
+	flex: 1 1 260px;
+}
+
+.findBtn {
+	height: 32px;
+	padding: 0 14px;
+	border-radius: 6px;
+	border: 1px solid #d4d4d5;
+	background: #ffffff;
+	color: #000000;
+	cursor: pointer;
+}
+
+.findBtn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.findCount {
+	min-width: 56px;
+	font-size: 12px;
+	color: #666;
+	text-align: center;
+}
+
+.findClose {
+	height: 32px;
+	width: 32px;
+	border-radius: 6px;
+	border: 1px solid #d4d4d5;
+	background: #ffffff;
+	color: #000000;
+	cursor: pointer;
+	line-height: 30px;
+	font-size: 18px;
+}
+
+.findBarDark .findInput {
+	border: 1px solid #444;
+	background: #2f2f2f;
+	color: #ffffff;
+}
+
+.findBarDark {
+	background: #222222;
+	border-bottom: 1px solid #444;
+}
+
+.findBarDark .findBtn,
+.findBarDark .findClose {
+	border: 1px solid #444;
+	background: #2f2f2f;
+	color: #ffffff;
+}
+
+.findBarDark .findCount {
+	color: #bbbbbb;
+}
+
+.cmHost :global(.mm-find-match) {
+	background-color: rgba(255, 215, 0, 0.18) !important;
+}
+
+.cmHost :global(.mm-find-match-current) {
+	background-color: rgba(255, 215, 0, 0.38) !important;
+}
+
+body.dark .cmHost :global(.mm-find-match) {
+	background-color: rgba(255, 215, 0, 0.16) !important;
+}
+
+body.dark .cmHost :global(.mm-find-match-current) {
+	background-color: rgba(255, 215, 0, 0.34) !important;
+}
+

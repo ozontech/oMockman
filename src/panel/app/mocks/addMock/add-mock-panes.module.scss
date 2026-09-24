@@ -1,0 +1,185 @@
+.responseHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.responseHeaderActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  :global(.ui.button) {
+    margin: 0 !important;
+  }
+}
+
+.generateGroup {
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+.modeDropdown {
+  font-size: 12px !important;
+}
+
+.generateMain {
+  width: 116px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.generateDone.generateDone {
+  &:global(.ui.basic.button),
+  &:global(.ui.basic.button.disabled) {
+    color: #21ba45 !important;
+    opacity: 1 !important;
+  }
+}
+
+.generatingPhrase {
+  display: inline-block;
+  text-align: left;
+  animation: phraseFade 1.8s ease-in-out infinite;
+}
+
+@keyframes phraseFade {
+  0% { opacity: 0.45; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0.45; }
+}
+
+:global(body.dark) .modeDropdownDark {
+  background-color: transparent !important;
+  color: #fff !important;
+}
+
+:global(body.dark) .modeDropdownDark :global(.menu) {
+  background-color: #2a2a2a !important;
+}
+
+:global(body.dark) .modeDropdownDark :global(.item),
+:global(body.dark) .modeDropdownDark :global(.text) {
+  color: #fff !important;
+}
+
+.responseHeaderMeta {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #6b6b6b;
+}
+
+:global(body.dark) .responseHeaderMeta {
+  color: #b8b8b8;
+}
+
+.aiError {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #9f3a38;
+  background-color: #fff6f6;
+  border: 1px solid #e0b4b4;
+}
+
+:global(body.dark) .aiError {
+  color: #ff8f8f;
+  background-color: #3a2222;
+  border-color: #5a3333;
+}
+
+.aiErrorBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aiErrorTrace {
+  font-family: monospace;
+  font-size: 11px;
+  opacity: 0.7;
+  user-select: all;
+  word-break: break-all;
+}
+
+.editorWrap {
+  border: 1px solid #d4d4d5;
+  border-radius: 4px;
+  overflow: visible;
+  background-color: #ffffff;
+}
+
+.editorGenerating {
+  animation: phraseFade 1.8s ease-in-out infinite;
+}
+
+// A single green flash of the border when generation finishes (~0.7s),
+// then the border returns to the regular theme colour.
+.editorSuccess {
+  animation: successFlash 0.7s ease-out;
+}
+
+@keyframes successFlash {
+  0% {
+    border-color: #21ba45;
+    box-shadow: 0 0 0 3px rgba(33, 186, 69, 0.25);
+  }
+  100% {
+    border-color: #d4d4d5;
+    box-shadow: 0 0 0 0 rgba(33, 186, 69, 0);
+  }
+}
+
+:global(body.dark) .editorWrap {
+  border-color: #444;
+  background-color: #222222;
+}
+
+:global(body.dark) .editorSuccess {
+  animation: successFlashDark 0.7s ease-out;
+}
+
+@keyframes successFlashDark {
+  0% {
+    border-color: #21ba45;
+    box-shadow: 0 0 0 3px rgba(33, 186, 69, 0.3);
+  }
+  100% {
+    border-color: #444;
+    box-shadow: 0 0 0 0 rgba(33, 186, 69, 0);
+  }
+}
+
+// Reduced motion: no animation, a soft static border.
+@media (prefers-reduced-motion: reduce) {
+  .editorGenerating,
+  .editorSuccess,
+  :global(body.dark) .editorSuccess {
+    animation: none;
+  }
+
+  .editorSuccess,
+  :global(body.dark) .editorSuccess {
+    border-color: #21ba45;
+  }
+}
+
+.addHeaderBtn {
+  transform: scale(1.25);
+  transform-origin: left center;
+  border: 1px solid #d4d4d5;
+  box-shadow: none;
+}
+
+:global(body.dark) .addHeaderBtn {
+  border-color: #ffffff;
+}

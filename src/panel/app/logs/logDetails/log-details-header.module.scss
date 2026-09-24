@@ -1,0 +1,39 @@
+.list {
+  margin: 0 16px 4px 16px !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+.list::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.item {
+  border-bottom: 1px solid var(--border) !important;
+  padding-top: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  color: var(--text);
+  display: flex;
+  gap: 6px;
+}
+
+.list .item:last-child { border-bottom: none !important; }
+
+.name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.value {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

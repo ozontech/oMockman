@@ -1,0 +1,165 @@
+.headersAddBtnWrap {
+	overflow: visible;
+	padding: 6px 0 2px;
+}
+
+.headersRow {
+	margin-top: 3px;
+}
+
+.headerField {
+	flex: 0 0 240px;
+	min-width: 180px;
+	margin-right: 8px;
+}
+
+.valueField {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+:global(.ui.form .fields) > .headerField {
+	flex: 0 0 240px !important;
+	width: 240px !important;
+}
+
+:global(.ui.form .fields) > .valueField {
+	flex: 1 1 auto !important;
+	width: auto !important;
+	min-width: 0 !important;
+}
+
+.headerRemove {
+	flex: none;
+}
+
+.container {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 0 16px 20px;
+}
+
+.stickyFooter {
+	position: sticky;
+	bottom: 0;
+	z-index: 10;
+	padding: 10px 16px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-top: 1px solid #e8e8e8;
+
+	&.dark {
+		background-color: #222222;
+		border-top-color: #444;
+	}
+
+	&.light {
+		background-color: #ffffff;
+		border-top-color: #e8e8e8;
+	}
+}
+
+.button {
+	height: 30px !important;
+	padding-top: 2px !important;
+	padding-bottom: 2px !important;
+	margin-right: 8px !important;
+
+	&:last-child {
+		margin-right: 0 !important;
+	}
+}
+
+.drawerTitle {
+	font-size: 18px;
+}
+
+.drawerHeaderActions {
+	display: flex;
+	gap: 2px;
+	align-items: center;
+}
+
+.segmentPlain {
+	border: none !important;
+	box-shadow: none !important;
+}
+
+.statusRow {
+	display: flex;
+	align-items: center;
+}
+
+.darkField :global(.ui.input > input) {
+	background-color: #222222 !important;
+	color: #ffffff !important;
+}
+
+.darkTextarea :global(textarea) {
+	background-color: #222222 !important;
+	color: #ffffff !important;
+}
+
+.openApiInputWrap {
+	position: relative;
+}
+
+.openApiSuggestList {
+	position: absolute;
+	z-index: 100;
+	top: calc(100% + 2px);
+	left: 0;
+	right: 0;
+	margin: 0;
+	padding: 4px 0;
+	list-style: none;
+	background: #fff;
+	border: 1px solid #d4d4d5;
+	border-radius: 4px;
+	box-shadow: 0 4px 12px rgba(0,0,0,.12);
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.openApiSuggestDark {
+	background: #2a2a2a;
+	border-color: #444;
+	box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+.openApiSuggestItem {
+	padding: 6px 10px;
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: inherit;
+
+	&:hover {
+		background: #f0f0f0;
+	}
+}
+
+.openApiSuggestDark .openApiSuggestItem:hover {
+	background: #3a3a3a;
+}
+
+.openapiError {
+	margin-top: 6px;
+	color: #9f3a38;
+	font-size: 12px;
+}
+
+.openapiHint {
+	margin-top: 6px;
+	font-size: 12px;
+}
+

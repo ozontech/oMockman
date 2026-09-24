@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": [
+    "src",
+    "src/__tests__"
+  ],
+  "compilerOptions": {
+    // Kept close to what a bundler expects: transpile-only friendly, strict,
+    // no accidental emit from a type check.
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "allowArbitraryExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noImplicitThis": true,
+    "noImplicitOverride": true,
+    "useDefineForClassFields": true,
+    "experimentalDecorators": false,
+
+    "moduleResolution": "Bundler",
+    "noEmit": false,
+    "rootDir": "src",
+    "target": "ESNext",
+    "module": "ES2022",
+    "jsx": "react",
+    "outDir": "dist/js",
+    "sourceMap": false,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/interface"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "node",
+      "chrome"
+    ]
+  }
+}

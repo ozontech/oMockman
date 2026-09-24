@@ -1,0 +1,21 @@
+.contentRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.viewPane {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+}
+
+.viewPaneActive {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}

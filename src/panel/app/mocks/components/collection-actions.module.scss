@@ -1,0 +1,48 @@
+.modal {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+}
+
+.modal :global(.header) {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+	border-bottom: 1px solid var(--border) !important;
+}
+
+.modal :global(.content) {
+	background: var(--bg) !important;
+	color: var(--text) !important;
+}
+
+.modal :global(.actions) {
+	background: var(--bg) !important;
+	border-top: 1px solid var(--border) !important;
+}
+
+.modal :global(p),
+.modal :global(b) {
+	color: var(--text) !important;
+}
+
+.overflowDropdown {
+	display: inline-flex;
+}
+
+.overflowDropdown :global(.menu) {
+	min-width: 160px;
+	background: var(--bg) !important;
+	border: 1px solid var(--border) !important;
+}
+
+.overflowDropdown :global(.menu > .item) {
+	color: var(--text) !important;
+}
+
+.overflowDropdown :global(.menu > .item:hover),
+.overflowDropdown :global(.menu > .item:focus),
+.overflowDropdown :global(.menu > .selected.item) {
+	background: rgba(127, 127, 127, 0.16) !important;
+	color: var(--text) !important;
+}
+
+

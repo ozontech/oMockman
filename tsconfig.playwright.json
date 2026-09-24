@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": [
+    "playwright"
+  ],
+  "exclude": [
+    "**/coverage",
+    "**/dist",
+    "**/node_modules"
+  ],
+  "compilerOptions": {
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": false,
+    "target": "ESNext",
+    "module": "ES2022",
+    "outDir": "dist/playwright",
+    "resolveJsonModule": true,
+    "types": [
+      "node",
+      "chrome",
+      "@playwright/test"
+    ]
+  }
+}

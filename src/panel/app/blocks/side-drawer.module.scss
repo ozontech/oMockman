@@ -1,0 +1,202 @@
+.root {
+	position: fixed;
+	top: 0;
+	right: 0;
+	height: 100%;
+	overflow: hidden;
+	background: var(--bg);
+	color: var(--text);
+	box-shadow: -2px 0 6px rgba(0, 0, 0, .25);
+	display: flex;
+	flex-direction: column;
+	z-index: 1000;
+	pointer-events: auto;
+}
+
+@keyframes mmDrawerEnter {
+	from {
+		opacity: 0;
+		transform: translateX(18px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes mmDrawerLeave {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(18px);
+	}
+}
+
+:global(.mm-side-drawer.mm-sd-enter) {
+	animation: mmDrawerEnter 180ms ease;
+}
+
+:global(.mm-side-drawer.mm-sd-leave) {
+	animation: mmDrawerLeave 180ms ease forwards;
+	pointer-events: none;
+}
+
+.detached {
+	position: relative !important;
+	top: auto !important;
+	right: auto !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	box-shadow: none !important;
+}
+
+.resizeHandle {
+	position: absolute;
+	left: -4px;
+	top: 0;
+	width: 8px;
+	height: 100%;
+	cursor: col-resize;
+	z-index: 1001;
+}
+
+.content {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	position: relative;
+}
+
+:global .root {
+	scrollbar-color: #c9c9c9 #2a2a2a;
+	scrollbar-width: thin;
+}
+
+:global(body.dark) .mm-side-drawer *::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+:global(body.dark) .mm-side-drawer *::-webkit-scrollbar-track {
+	background: #2a2a2a;
+}
+
+:global(body.dark) .mm-side-drawer *::-webkit-scrollbar-thumb {
+	background: #c9c9c9;
+	border-radius: 8px;
+	border: 2px solid #2a2a2a;
+}
+
+.root :global(.ui.segment) {
+	border-radius: 0 !important;
+	margin: 0 !important;
+	overflow: visible !important;
+
+}
+
+.root :global(.ui.small.button) {
+	min-height: 38px !important;
+	line-height: 38px !important;
+	padding: 0 10px !important;
+}
+
+.root :global(.field.status-field) {
+	margin-right: 10px !important;
+}
+
+.root :global(.equal.width.fields > .field.status-field) {
+	margin-right: 10px !important;
+}
+
+.root :global(.compact-number) {
+	width: 100px !important;
+	min-width: 0 !important;
+	max-width: 100% !important;
+}
+
+.root :global(.ui.form .field > input),
+.root :global(.ui.form .field > textarea) {
+	border: 1px solid #d4d4d5 !important;
+	box-shadow: none !important;
+}
+
+:global(body.dark) .root input[type="text"],
+:global(body.dark) .root input[type="number"],
+:global(body.dark) .root textarea {
+	background: #222222 !important;
+	border-color: #444 !important;
+	color: var(--text) !important;
+}
+
+:global(body.dark) .root :global(.ui.form .field > input),
+:global(body.dark) .root :global(.ui.form .field > textarea) {
+	border: 1px solid #444 !important;
+}
+
+.root :global(.ui.button),
+.root :global(.ui.buttons .button) {
+	border: 1px solid #d4d4d5 !important;
+}
+
+:global(body.dark) .root :global(.ui.button),
+:global(body.dark) .root :global(.ui.buttons .button) {
+	border: 1px solid #444 !important;
+}
+
+.root :global(.ui.buttons .ui.button.blue:not(.active)),
+.root :global(.ui.button.blue:not(.active)) {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+	border: 1px solid #d4d4d5 !important;
+}
+
+.root :global(.ui.buttons .ui.button.blue.active),
+.root :global(.ui.button.blue.active) {
+	background-color: #2185d0 !important;
+	color: #ffffff !important;
+	border: 1px solid #d4d4d5 !important;
+}
+
+:global(body.dark) .root :global(.ui.buttons .ui.button.blue:not(.active)),
+:global(body.dark) .root :global(.ui.button.blue:not(.active)) {
+	background-color: #222222 !important;
+	color: #ffffff !important;
+	border: 1px solid #444 !important;
+}
+
+:global(body.dark) .root :global(.ui.buttons .ui.button.blue.active),
+:global(body.dark) .root :global(.ui.button.blue.active) {
+	background-color: #2185d0 !important;
+	color: #ffffff !important;
+	border: 1px solid #444 !important;
+}
+
+.root :global(.ui.button.blue),
+.root :global(.ui.button.blue:hover),
+.root :global(.ui.button.blue:focus),
+.root :global(.ui.button.blue:active),
+.root :global(.ui.buttons .ui.button.blue),
+.root :global(.ui.buttons .ui.button.blue:hover),
+.root :global(.ui.buttons .ui.button.blue:focus),
+.root :global(.ui.buttons .ui.button.blue:active) {
+	transition: none !important;
+	box-shadow: none !important;
+}
+
+:global(body.dark) .root :global(.ui.dropdown) {
+	background: #222222 !important;
+	color: var(--text) !important;
+}
+
+:global(body.dark) .root :global(.ui.dropdown > .text) {
+	color: var(--text) !important;
+}
+
+:global(body.dark) .root input::placeholder,
+:global(body.dark) .root textarea::placeholder {
+	color: #888888 !important;
+}
