@@ -151,7 +151,6 @@ function main() {
 
 		rows.push({
 			name,
-			version: meta.version,
 			license,
 			homepage: meta.homepage ?? (typeof meta.repository === 'string' ? meta.repository : meta.repository?.url) ?? '',
 			text: readLicenseText(dir),
@@ -193,16 +192,18 @@ function main() {
 	lines.push('')
 	lines.push(`${rows.length} packages: ${[...byLicense].sort((a, b) => b[1] - a[1]).map(([l, c]) => `${l} (${c})`).join(', ')}.`)
 	lines.push('')
-	lines.push('| Package | Version | Licence |')
-	lines.push('|---|---|---|')
+	// No versions: a licence belongs to the package, and a patch bump must not make every
+	// dependency update fail the check. A new package or a changed licence still does.
+	lines.push('| Package | Licence |')
+	lines.push('|---|---|')
 	for (const row of rows) {
-		lines.push(`| ${row.name} | ${row.version} | ${row.license} |`)
+		lines.push(`| ${row.name} | ${row.license} |`)
 	}
 	lines.push('')
 	lines.push('## Licence texts')
 	lines.push('')
 	for (const row of rows) {
-		lines.push(`### ${row.name}@${row.version}`)
+		lines.push(`### ${row.name}`)
 		lines.push('')
 		lines.push(`Licence: ${row.license}`)
 		if (row.homepage) lines.push(`Homepage: ${row.homepage.replace(/^git\+/, '').replace(/\.git$/, '')}`)

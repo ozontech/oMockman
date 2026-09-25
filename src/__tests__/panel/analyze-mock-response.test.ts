@@ -1,15 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import {
 	analyzeMockResponseByOpenApi,
 	initialOpenApiValidationState,
 } from '../../panel/app/mocks/addMock/openapi-analysis'
 
+type SendMessage = (...args: unknown[]) => Promise<unknown>
+
+/** The `browser` stub from setup.ts, typed here: @types/chrome declares its own `browser`. */
+const browserRuntime = (): { sendMessage: SendMessage } =>
+	(globalThis as unknown as { browser: { runtime: { sendMessage: SendMessage } } }).browser.runtime
+
 describe('analyzeMockResponseByOpenApi', () => {
-	let sendMessageSpy: ReturnType<typeof vi.spyOn>
+	let sendMessageSpy: MockInstance<SendMessage>
 
 	beforeEach(() => {
-		sendMessageSpy = vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({
+		sendMessageSpy = vi.spyOn(browserRuntime(), 'sendMessage').mockResolvedValue({
 			ok: true,
 			sourceUrl: 'https://api.example.com/openapi.json',
 			spec: {

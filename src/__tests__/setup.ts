@@ -1,14 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 
-declare global {
-	var browser: {
-		runtime: {
-			sendMessage: ReturnType<typeof vi.fn>
-		}
-	}
-}
-
 const mockBrowser = {
 	runtime: {
 		sendMessage: vi.fn().mockResolvedValue({ ok: true, sourceUrl: '', spec: {} }),

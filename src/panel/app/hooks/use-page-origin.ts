@@ -8,6 +8,8 @@ import { useGlobalStore } from '@/panel/app/store'
  * Deliberately not `meta.tab.url`: that can fall back to `inspectedWindow.eval`, which the
  * page controls. Permissions are granted against this value.
  */
+type TabUpdatedListener = Parameters<typeof chrome.tabs.onUpdated.addListener>[0]
+
 export function usePageOrigin(): { origin: string | null; loading: boolean } {
 	const tabId = useGlobalStore((s) => s.meta.tab?.id)
 	const [origin, setOrigin] = useState<string | null>(null)
@@ -51,7 +53,8 @@ export function usePageOrigin(): { origin: string | null; loading: boolean } {
 	useEffect(() => {
 		if (typeof tabId !== 'number') return undefined
 
-		const onUpdated = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo): void => {
+		// Typed from the listener itself: @types/chrome renamed TabChangeInfo between versions.
+		const onUpdated: TabUpdatedListener = (updatedTabId, changeInfo) => {
 			if (updatedTabId !== tabId) return
 			// `url` arrives only when the address changes; a plain reload shows up as `status`.
 			if (!changeInfo.url && changeInfo.status !== 'loading') return
