@@ -59,7 +59,7 @@ describe('header buttons', () => {
 			render(<DocsButton />)
 			const link = screen.getByLabelText(t.docsTitle)
 
-			expect(link.getAttribute('href')).toBe('https://github.com/ozontech/mockman#readme')
+			expect(link.getAttribute('href')).toBe('https://github.com/ozontech/oMockman#readme')
 			expect(link.getAttribute('target')).toBe('_blank')
 			// Without this a page opened by the panel could reach back through window.opener.
 			expect(link.getAttribute('rel')).toBe('noreferrer')

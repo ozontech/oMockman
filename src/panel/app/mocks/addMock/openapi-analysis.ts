@@ -168,6 +168,11 @@ export function resolveSchemaRefs(
 		} else if (Array.isArray(next.type) && !next.type.includes('null')) {
 			next.type = [...next.type, 'null']
 		}
+		// `nullable` states that the value may be null. Generators emit it next to an enum without
+		// repeating null in the list, and a strict reading would reject every such null.
+		if (Array.isArray(next.enum) && !next.enum.includes(null)) {
+			next.enum = [...next.enum, null]
+		}
 		delete next.nullable
 	}
 

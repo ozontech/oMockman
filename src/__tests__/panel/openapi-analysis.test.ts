@@ -366,6 +366,18 @@ describe('resolveSchemaRefs', () => {
 		expect(resolved).toEqual({ type: ['string', 'null'] })
 	})
 
+	it('lets a nullable enum be null', () => {
+		// Generators write nullable next to an enum without repeating null in the list.
+		const schema: RecordLike = { type: 'string', enum: ['new', 'sale'], nullable: true }
+		const resolved = resolveSchemaRefs(schema, {})
+		expect(resolved).toEqual({ type: ['string', 'null'], enum: ['new', 'sale', null] })
+	})
+
+	it('keeps an enum closed when it is not nullable', () => {
+		const schema: RecordLike = { type: 'string', enum: ['new', 'sale'] }
+		expect(resolveSchemaRefs(schema, {})).toEqual({ type: 'string', enum: ['new', 'sale'] })
+	})
+
 	it('handles an array', () => {
 		const schema: RecordLike = { items: { type: 'string' } }
 		const resolved = resolveSchemaRefs(schema, {})

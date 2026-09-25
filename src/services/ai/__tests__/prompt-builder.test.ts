@@ -252,6 +252,33 @@ describe('buildMockGenerationMessages', () => {
 			expect(system.content).toMatch(/ENUM VARIETY MATTERS MORE/)
 		})
 
+		it('corner mode with a schema: numeric edges come from minimum/maximum, never past them', () => {
+			// The regression: corner asked for "negative" numbers while the schema said minimum: 0,
+			// so the model produced price: -1 and the mock failed its own schema.
+			const [system] = buildMockGenerationMessages({
+				mock: { method: MethodEnum.GET, url: '/api/items', status: 200 },
+				mode: 'corner',
+				openApiOperation: { type: 'object', properties: { price: { type: 'number', minimum: 0 } } },
+			})
+
+			expect(system.content).toMatch(/minimum: 0 gets 0, NEVER a negative number/)
+			expect(system.content).toMatch(/The schema wins over every rule above/)
+			// No rule may ask for negatives without the "nothing limits them" condition.
+			for (const line of system.content.split('\n').filter((l) => /negative/i.test(l))) {
+				expect(line).toMatch(/only where nothing limits them|Only a field with no minimum\/maximum|NEVER a negative/)
+			}
+		})
+
+		it('corner mode without a schema: negatives stay allowed where nothing limits them', () => {
+			const [system] = buildMockGenerationMessages({
+				mock: { method: MethodEnum.GET, url: '/api/items', status: 200, response: sampleJson },
+				mode: 'corner',
+			})
+
+			expect(system.content).toMatch(/0, negative and very large only where nothing limits them/)
+			expect(system.content).not.toMatch(/The schema wins over every rule above/)
+		})
+
 		it('happy with a schema: stronger enum rule and the enum catalogue attached', () => {
 			const [system, user] = buildMockGenerationMessages({
 				mock: { method: MethodEnum.GET, url: '/api/items', status: 200 },

@@ -78,6 +78,46 @@ describe('inject/bridge', () => {
 		expect(await resolveMock('GET', 'https://example.com')).toBeNull()
 	})
 
+	it('mocks a request the page made before the bridge connected', async () => {
+		// A page can fire its first fetch at load, before the isolated world is ready.
+		const early = resolveMock('GET', 'https://example.com/api')
+		await flush()
+
+		const content = new FakeContentSide(() => MOCK_ANSWER)
+
+		expect(await early).toEqual(MOCK_ANSWER)
+		expect(content.matchRequests).toHaveLength(1)
+	})
+
+	it('lets an early request go once the connect window runs out', async () => {
+		vi.useFakeTimers()
+		resetBridgeForTests()
+		installBridge()
+
+		const early = resolveMock('GET', 'https://example.com/api')
+		await vi.advanceTimersByTimeAsync(999)
+		let settled = false
+		void early.then(() => { settled = true })
+		await vi.advanceTimersByTimeAsync(0)
+		expect(settled).toBe(false)
+
+		await vi.advanceTimersByTimeAsync(1)
+		expect(await early).toBeNull()
+	})
+
+	it('does not wait at all once the connect window is over', async () => {
+		vi.useFakeTimers()
+		resetBridgeForTests()
+		installBridge()
+		await vi.advanceTimersByTimeAsync(1000)
+
+		// A bridge that never came must not slow down every later request.
+		let settled = false
+		void resolveMock('GET', 'https://example.com/api').then(() => { settled = true })
+		await vi.advanceTimersByTimeAsync(0)
+		expect(settled).toBe(true)
+	})
+
 	it('acknowledges the handshake so the content script stops retrying', async () => {
 		const content = new FakeContentSide()
 		await flush()

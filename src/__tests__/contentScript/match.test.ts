@@ -2,8 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 
 import { MethodEnum } from '@/interface'
 import type { IDynamicURLMap, IMockResponse, IStore, IURLMap } from '@/interface'
+import type { ILog } from '@/interface/mock'
 import type { ICollectionTree } from '@/interface/collection'
-import { getMockPaths, getActiveMockWithPath } from '@/contentScript'
+import { getMockPaths, getActiveMockWithPath, markMockedInLog } from '@/contentScript'
 import type { IDynamicRoute } from '@/contentScript'
 
 describe('getMockPaths', () => {
@@ -421,5 +422,47 @@ describe('getActiveMockWithPath', () => {
 
 		const result = getActiveMockWithPath(paths, store)
 		expect(result.mock).toEqual(mocks[0])
+	})
+})
+
+describe('markMockedInLog', () => {
+	const URL = 'https://api.example.com/users'
+	const state = {
+		store: {
+			active: true,
+			mocks: [{ id: 'm1', name: 'u', method: MethodEnum.GET, url: URL, status: 200, response: '{}', headers: [], active: true, createdOn: 1 }],
+			collectionTree: { root: [], nodes: {} },
+		} as unknown as IStore,
+		urlMap: { [URL]: { GET: ['mocks.0'] } } as IURLMap,
+		dynamicUrlMap: {} as IDynamicURLMap,
+	}
+	const log = (isMocked?: boolean): ILog => ({ request: { url: URL, method: 'GET' }, isMocked } as unknown as ILog)
+
+	it('trusts the page world when it served the mock, and links the log to it', () => {
+		const entry = log(true)
+
+		markMockedInLog(entry, state)
+
+		expect(entry.isMocked).toBe(true)
+		expect(entry.mockPath).toBe('mocks.0')
+	})
+
+	it('does not call a request mocked just because a mock matches it', () => {
+		// The regression: the request left before the bridge was up, so the real response came
+		// back, yet a matching mock made the log say "mocked".
+		const entry = log(false)
+
+		markMockedInLog(entry, state)
+
+		expect(entry.isMocked).toBe(false)
+		expect(entry.mockPath).toBeUndefined()
+	})
+
+	it('treats a log without the flag as not mocked', () => {
+		const entry = log(undefined)
+
+		markMockedInLog(entry, state)
+
+		expect(entry.isMocked).toBe(false)
 	})
 })

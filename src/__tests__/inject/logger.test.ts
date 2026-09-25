@@ -27,7 +27,7 @@ describe('buildLog', () => {
 			mockmanId: 'mock-123',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 		const req = result.request
 
 		expect(result.id).toBe('mock-123')
@@ -48,7 +48,7 @@ describe('buildLog', () => {
 			mockmanId: 'mock-456',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 		expect(result.request).toBeDefined()
 		expect(result.request?.body).toBe('{"key":"value","nested":{"a":1}}')
 	})
@@ -63,7 +63,7 @@ describe('buildLog', () => {
 			mockmanId: 'mock-789',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 		expect(result.request).toBeDefined()
 		expect(result.request?.body).toBe('Unsupported body type!')
 	})
@@ -77,7 +77,7 @@ describe('buildLog', () => {
 			mockmanId: 'mock-111',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 		const req = result.request
 
 		expect(req?.url).toBe('http://example.com/api')
@@ -95,7 +95,7 @@ describe('buildLog', () => {
 			headers: {},
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 
 		expect(result.response).toBeUndefined()
 	})
@@ -114,7 +114,7 @@ describe('buildLog', () => {
 			headers: [{ name: 'Content-Type', value: 'application/json' }],
 		}
 
-		const result = buildLog(request, response) as ILog
+		const result = buildLog(request, response, false) as ILog
 
 		expect(result.response).toEqual(response)
 	})
@@ -128,7 +128,7 @@ describe('buildLog', () => {
 			mockmanId: 'mock-333',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 		expect(result.request).toBeDefined()
 		expect(result.request?.body).toBe('null')
 	})
@@ -141,7 +141,7 @@ describe('buildLog', () => {
 			headers: {},
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 
 		expect(result.id).toBeUndefined()
 	})
@@ -158,8 +158,16 @@ describe('buildLog', () => {
 			mockmanId: 'mock-circular',
 		}
 
-		const result = buildLog(request) as ILog
+		const result = buildLog(request, undefined, false) as ILog
 
 		expect(result.request?.body).toBe('Unsupported body type!')
+	})
+
+	it('says whether the response came from a mock', () => {
+		const request = { url: 'http://example.com/api', method: 'GET' as const, headers: {} }
+
+		// The page world is the only side that knows for sure; the panel shows this as-is.
+		expect((buildLog(request, undefined, true) as ILog).isMocked).toBe(true)
+		expect((buildLog(request, undefined, false) as ILog).isMocked).toBe(false)
 	})
 })

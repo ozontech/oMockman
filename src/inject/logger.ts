@@ -15,9 +15,14 @@ function parseQuery(query: string): Record<string, string | string[]> {
 	return out
 }
 
+/**
+ * `mocked` is whether the response came from a mock. Only the page world knows it for sure: a
+ * matching mock can still be skipped, e.g. when the request left before the bridge was ready.
+ */
 export function buildLog(
 	request: IRequestCore & { mockmanId?: string },
-	response?: ILog['response'],
+	response: ILog['response'] | undefined,
+	mocked: boolean,
 ): IEventMessage['message'] {
 	const rawUrl = request.url
 	const [url, query] = rawUrl.split('?')
@@ -43,5 +48,6 @@ export function buildLog(
 			headers: Object.entries(getHeaders(request.headers)).map(([name, value]) => ({ name, value })),
 		},
 		response,
+		isMocked: mocked,
 	}
 }

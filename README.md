@@ -16,6 +16,8 @@
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
 </p>
 
+<p align="center"><b>English</b> | <a href="README.ru.md">Русский</a></p>
+
 A browser DevTools extension that intercepts `fetch` and `XMLHttpRequest` in the
 page and replaces responses with your own — no proxy, no changes to the
 application under test, no rebuild.
@@ -31,22 +33,28 @@ from becoming a mock).
 - Response validation against an OpenAPI schema
 - Optional AI generation of response bodies through any OpenAI-compatible endpoint you configure
 
+<p align="center">
+  <img src="docs/assets/demo.gif" width="900" alt="oMockman demo: record requests from Logs, fix a banner against the OpenAPI schema, generate happy and corner-case products with AI">
+</p>
+
 ---
 
-## Why another mocking tool
+## How it compares
 
-Most existing options ask for something the team under test cannot always give:
+The usual tools for replacing responses are Postman, Proxyman, Charles or Fiddler. They are
+powerful, but they are separate applications: you run them next to the browser and sometimes
+set up a proxy and trust its certificate. Browser extensions are lighter, but most of them cover
+only the basic case of swapping one response.
 
-| Tool | What it costs |
-|---|---|
-| A proxy (mitmproxy, Charles) | a process to run and certificates to trust on every machine |
-| In-app mocking (msw, custom flags) | a code change and a rebuild of the application |
-| Browser extensions with a popup UI | a separate window next to DevTools, away from the Network tab |
+oMockman covers the whole mocking workflow inside DevTools:
 
-Mockman is aimed at QA engineers working against an already deployed
-environment: install the extension, open DevTools, replace a response. Nothing
-is installed into the application, and the request never leaves the browser when
-it is mocked.
+- **Lives next to the Network tab.** No extra windows or proxies; a logged request becomes a mock in one click.
+- **Postman-style collections.** Folders and subfolders, with a whole group switched on or off at once.
+- **JSON import and export.** Hand a set of mocks to another team with its folder structure intact.
+- **OpenAPI validation.** A mock body is checked against the Swagger schema, and contract mismatches are highlighted in the editor.
+- **AI-generated responses.** Plausible data, edge cases or a schema-shaped error through any OpenAI-compatible API.
+- **JSON editor** with format errors highlighted and one-click formatting.
+- **Chrome and Firefox** from one codebase.
 
 ---
 
@@ -103,6 +111,9 @@ npm run build:firefox    # dist/firefox
 
 ## Development
 
+<details>
+<summary>Commands, tooling and where each part of the code lives.</summary>
+
 ```bash
 npm ci              # install dependencies
 npm run dev         # vite dev server for the panel UI
@@ -127,9 +138,14 @@ A `Makefile` wraps the same commands (`make build`, `make test`, `make lint`,
 | `src/services` | shared logic: URL matching, JSON, env variables, AI client |
 | `public/chrome`, `public/firefox` | manifests and static assets per browser |
 
+</details>
+
 ---
 
 ## How interception works
+
+<details>
+<summary>The mock store never enters the page; the page gets only the answer to its own request.</summary>
 
 The extension lives in the browser's *isolated world*, while `window.fetch`
 belongs to the page's *main world*. Patching the page's `fetch` therefore
@@ -164,9 +180,14 @@ Mockman keeps the two apart:
 Synchronous `XMLHttpRequest` (`open(..., false)`) cannot wait for that exchange
 and is never mocked.
 
+</details>
+
 ---
 
 ## Site access
+
+<details>
+<summary>Mocks are served only on sites you allowed. One click per site.</summary>
 
 A mock is served only on a site you allowed it on. Matching goes by method and
 URL, so without this any page could read a mock body by guessing an internal
@@ -196,9 +217,13 @@ seen, so the list stays accurate and any site can still be revoked. It is off by
 default, and turning it on gives every page you open the ability to read your
 mocks.
 
-On an origin with nothing granted, Mockman does not wait for anything: requests
-go straight to the network, so the extension adds no latency to sites you never
-use it on.
+A request made in the first moments of a page load waits until the extension has
+connected to the page, so that it can be mocked too. That takes a few milliseconds
+and is capped at one second. After that, on a site with nothing granted, requests
+go straight to the network: the extension adds no measurable latency to sites you
+never use it on.
+
+</details>
 
 ---
 
@@ -220,9 +245,33 @@ the extension can reach is on by default.
 | Logging of requests | header toggle | on, only while the panel is open |
 | Recording responses into mocks | header toggle | off |
 
+<details>
+<summary>AI generation of response bodies</summary>
+
+Works with any OpenAI-compatible API: public, corporate or local. Add a connection under
+**Settings → AI connections** with a name, server URL, model and key; **Test connection**
+checks it. To skip the form, paste a ready config through **Import JSON**.
+
+The mode next to **Generate** in the mock form decides what you get:
+
+| Mode | What it generates |
+|---|---|
+| **Happy** | plausible data for a successful response |
+| **Corner** | edge cases: empty values, long strings, special characters |
+| **Error** | an error that fits the schema; needs a 400–599 status and an OpenAPI schema |
+
+With an OpenAPI schema on the mock, the body is generated to match it, which is the most
+accurate option. A connection can carry a shared prompt, such as "all names in Spanish".
+If the model cuts the JSON short, raise the token limit in the connection settings.
+
+</details>
+
 ---
 
 ## Permissions
+
+<details>
+<summary>Why the extension asks for each browser permission.</summary>
 
 | Permission | Why |
 |---|---|
@@ -241,9 +290,14 @@ cut-off body cannot turn into a broken mock. The page itself still receives the
 full response; the log entry shows a "body is too large" error instead of the
 body, and a mock created from it asks for a smaller body before it can be saved.
 
+</details>
+
 ---
 
 ## Privacy and data
+
+<details>
+<summary>No backend, no telemetry. The only outbound request is the AI endpoint you configure.</summary>
 
 Mockman has no backend, no telemetry and no analytics. Everything it knows lives
 in `chrome.storage.local` in your own browser.
@@ -265,6 +319,8 @@ Loading an OpenAPI schema is a fetch the background worker makes for you; it
 refuses loopback and private addresses unless you turn on *Allow local OpenAPI
 sources* in Settings.
 
+</details>
+
 ---
 
 ## Limitations
@@ -281,7 +337,7 @@ sources* in Settings.
 ## Contributing
 
 Bug reports and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
-Security issues: please follow [SECURITY.md](SECURITY.md) instead of opening a
+Security issues: please [report them privately](https://github.com/ozontech/oMockman/security/advisories/new) instead of opening a
 public issue.
 
 ## License

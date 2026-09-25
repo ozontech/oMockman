@@ -29,7 +29,10 @@ jobs:
       - run: npm run typescript
       - run: npm run playwright:typecheck
       - name: Third-party notices are up to date
-        run: npm run notices:check
+        run: |
+          npm run build:chrome
+          npm run build:firefox
+          npm run notices:check
 
   unit:
     name: Unit tests

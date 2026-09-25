@@ -70,12 +70,12 @@ const CORNER_RULES = [
 	'Corner-case data mode: the structure and keys stay valid, but fill the values with problematic variants to test layout and validation.',
 	'Apply test design techniques (boundary value analysis + pairwise testing) rather than "one field per element". The goal is the fewest elements with the widest coverage.',
 	'Use a long string (300+ characters) in ONLY ONE string field per element, not in all of them at once — otherwise the response bloats and gets cut off. Mutate the other string fields of the same element with other, short types (empty, spaces, special characters, emoji).',
-	'List of problematic value types: empty string; a string of spaces only; leading/trailing spaces; a very long string (300+ characters); special characters (!@#$%^&* etc.); emoji; unicode (你好); line breaks and tabs inside; for numbers — 0, negative, very large; for dates — invalid format and boundary dates.',
+	'List of problematic value types: empty string; a string of spaces only; leading/trailing spaces; a very long string (300+ characters); special characters (!@#$%^&* etc.); emoji; unicode (你好); line breaks and tabs inside; for numbers — the edges of their allowed range (0, negative and very large only where nothing limits them); for dates — invalid format and boundary dates.',
 	'FIRST build elements "by mutation type": one element applies ONE problematic value type TO ALL matching fields AT ONCE (for example an "empty" element — all string fields empty; a "long" element — all string fields long). This way every problem type reaches every field.',
 	'THEN add 2-3 combined (pairwise) elements in which different fields of one object carry different mutation types at the same time.',
 	'Keep the first array element as one fully valid object for reference.',
 	'Do NOT use null and do not skip data fields — the point is problematic values of the right type, not missing values (this does not apply to error fields, see below).',
-	'Numeric and required fields that physically cannot take a string (id etc.) are mutated within their own bounds (0, negative, huge numbers), not with strings.',
+	'Numeric and required fields that physically cannot take a string (id etc.) are mutated within their own bounds (the lowest and highest values they allow), not with strings.',
 	POSITIVE_RULE,
 ]
 
@@ -85,8 +85,9 @@ const CORNER_WITH_SCHEMA_RULES = [
 	'Fill ALL fields described in the schema (except error branches) — skip none.',
 	'STRICTLY follow the schema types — the resulting JSON must pass schema validation. Do NOT put a string into number/integer, junk into format fields, or a value outside the enum.',
 	'Free string fields (type: string WITHOUT a strict format) are the main place for edge cases: be SURE to run the whole "List of problematic value types" from the rule above through them. Respect minLength/maxLength if set.',
-	'Numeric fields (number/integer) get boundary NUMBERS: 0, negative, very large (within minimum/maximum if set). Do not turn them into strings.',
+	'Numeric fields (number/integer) get boundary NUMBERS taken from the schema: the minimum and maximum themselves, and the smallest step inside them. A field with minimum: 0 gets 0, NEVER a negative number; a field with maximum gets that maximum, never more. Only a field with no minimum/maximum may get negative or very large numbers. Do not turn numbers into strings.',
 	'Fields with a format (date-time, date, email, uuid etc.) are always VALID for that format, but use boundary variants: for dates — the distant past or future, the end of a month, a leap year; never break the format itself.',
+	'The schema wins over every rule above: if a rule suggests a value the schema forbids (below minimum, above maximum, outside enum, shorter than minLength, the wrong type), use the nearest value the schema allows instead. Corner cases test the edges of what is valid, not invalid data.',
 ]
 
 // Short meaning of common HTTP statuses: a hint for the error text.

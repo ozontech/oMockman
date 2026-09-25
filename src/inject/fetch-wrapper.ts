@@ -57,6 +57,7 @@ export function applyFetchWrapper(ids: RequestIdManager): void {
 							mockmanId: id,
 						},
 						responseForLog(statusCode, mock.response ?? '', mock.headers),
+						true,
 					)
 					markRequestBody(logMessage, requestBody)
 					sendLog(id, logMessage)
@@ -90,6 +91,7 @@ export function applyFetchWrapper(ids: RequestIdManager): void {
 						mockmanId: id,
 					},
 					resp.type === 'opaque' ? undefined : responseForLog(resp.status, text, fallbackHeaders),
+					false,
 				)
 				markRequestBody(logMessage, requestBody)
 				sendLog(id, logMessage)

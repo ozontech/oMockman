@@ -3,7 +3,7 @@ import { Button, Icon } from 'semantic-ui-react'
 
 import { useGlobalStore } from '@/panel/app/store'
 
-const DOCS_URL = 'https://github.com/ozontech/mockman#readme'
+const DOCS_URL = 'https://github.com/ozontech/oMockman#readme'
 
 export const DocsButton: React.FC = () => {
 	const t = useGlobalStore((s) => s.t)

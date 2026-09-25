@@ -74,6 +74,7 @@ export function applyXhrWrapper(_ids: RequestIdManager): void {
 								mockmanId: id,
 							},
 							responseForLog(status, text, headers),
+							false,
 						)
 						markRequestBody(logMessage, requestBody)
 						sendLog(id, logMessage)
@@ -139,6 +140,7 @@ export function applyXhrWrapper(_ids: RequestIdManager): void {
 						responseText,
 						Object.entries(headersObj).map(([name, value]) => ({ name, value })),
 					),
+					true,
 				)
 				markRequestBody(logMessage, requestBody)
 				sendLog(id, logMessage)

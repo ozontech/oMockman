@@ -410,4 +410,54 @@ describe('analyzeMockResponseByOpenApi', () => {
 		expect(result.status).toBe('ready')
 		expect(result.issues).toHaveLength(0)
 	})
+
+	describe('nullable enum', () => {
+		const spec = {
+			openapi: '3.0.3',
+			info: { title: 'Shop', version: '1' },
+			paths: {
+				'/api/products': {
+					get: {
+						responses: {
+							200: {
+								description: 'ok',
+								content: { 'application/json': { schema: { $ref: '#/components/schemas/Product' } } },
+							},
+						},
+					},
+				},
+			},
+			components: {
+				schemas: {
+					Product: {
+						type: 'object',
+						properties: { badge: { type: 'string', enum: ['new', 'sale', 'hit'], nullable: true } },
+					},
+				},
+			},
+		}
+
+		const analyze = (body: unknown) => {
+			setMockResponse({ ok: true, sourceUrl: 'https://api.example.com/openapi.json', spec })
+			return analyzeMockResponseByOpenApi({
+				specUrl: 'https://api.example.com/openapi.json',
+				requestUrl: 'https://api.example.com/api/products',
+				method: 'GET',
+				status: 200,
+				responseBody: JSON.stringify(body),
+			})
+		}
+
+		it('accepts null for a nullable enum', async () => {
+			// The regression: corner generated badge: null and the mock could not be saved.
+			const result = await analyze({ badge: null })
+			expect(result.status).toBe('ready')
+			expect(result.issues).toEqual([])
+		})
+
+		it('still rejects a value outside the enum', async () => {
+			const result = await analyze({ badge: 'bogus' })
+			expect(result.issues.length).toBeGreaterThan(0)
+		})
+	})
 })

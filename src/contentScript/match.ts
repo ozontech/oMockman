@@ -1,4 +1,4 @@
-import type { IDynamicURLMap, IMockResponse, IStore, IURLMap } from '@/interface/mock'
+import type { IDynamicURLMap, ILog, IMockResponse, IStore, IURLMap } from '@/interface/mock'
 import { isCollectionActive } from '@/panel/app/service/collection-tree'
 import { normalizeUrl } from '@/services/url'
 import { getByPath } from '@/services/helper'
@@ -40,3 +40,24 @@ export function getActiveMockWithPath(
 	return { mock: null, path: null }
 }
 
+/**
+ * Fills in how the log should show the request. The page world says whether a mock was served;
+ * a matching mock alone proves nothing, since the request may have left before the bridge was
+ * up or on a site that was not allowed. The mock path is looked up only to link the log to it.
+ */
+export function markMockedInLog(
+	log: ILog,
+	state: { store: IStore; urlMap: IURLMap; dynamicUrlMap: IDynamicURLMap } | undefined,
+): void {
+	if (!state || !log.request?.url || !log.request?.method) return
+	if (log.isMocked !== true) {
+		log.isMocked = false
+		return
+	}
+	const paths = getMockPaths(log.request.url, log.request.method, {
+		urlMap: state.urlMap,
+		dynamicUrlMap: state.dynamicUrlMap,
+	})
+	const { path } = getActiveMockWithPath(paths, state.store)
+	log.mockPath = path ?? undefined
+}

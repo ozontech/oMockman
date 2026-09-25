@@ -7,8 +7,17 @@ const MATCH_TIMEOUT_MS = 1500
 const NEGATIVE_CACHE_LIMIT = 1000
 /** How long a request waits for the permission verdict before going to the network. */
 const GATE_TIMEOUT_MS = 300
+/**
+ * How long after the page starts a request may wait for the isolated world to connect. A page
+ * can fire its first request before the bridge is up; without this it goes out unmocked. The
+ * window is counted from install, not per request, so a bridge that never comes costs only the
+ * requests of the first second.
+ */
+const CONNECT_WAIT_MS = 1000
 
 let port: MessagePort | null = null
+let installedAt = 0
+const portWaiters = new Set<() => void>()
 let loggingEnabled = false
 let nextRequestId = 1
 /** Whether this origin may be served; null until the isolated world says. */
@@ -44,6 +53,26 @@ function handleContentMessage(message: BridgeContentMessage): void {
 		for (const waiter of gateWaiters) waiter(message.open)
 		gateWaiters.clear()
 	}
+}
+
+function waitForPort(): Promise<boolean> {
+	if (port) return Promise.resolve(true)
+	const left = installedAt + CONNECT_WAIT_MS - Date.now()
+	if (!installedAt || left <= 0) return Promise.resolve(false)
+
+	return new Promise<boolean>((resolve) => {
+		let settled = false
+		const finish = (connected: boolean) => {
+			if (settled) return
+			settled = true
+			clearTimeout(timer)
+			portWaiters.delete(onConnect)
+			resolve(connected)
+		}
+		const onConnect = () => finish(true)
+		const timer = setTimeout(() => finish(false), left)
+		portWaiters.add(onConnect)
+	})
 }
 
 /** Waits only while a verdict is plausibly coming: no port means nothing to wait for. */
@@ -94,8 +123,10 @@ export function installBridge(): void {
 		}
 		port.start?.()
 		post({ k: 'ack' })
+		for (const waiter of [...portWaiters]) waiter()
 	}
 
+	installedAt = Date.now()
 	window.addEventListener('message', onWindowMessage, true)
 }
 
@@ -109,7 +140,7 @@ export function isLoggingEnabled(): boolean {
 
 /** Resolves to null, i.e. go to the network, when the bridge is unavailable or too slow. */
 export async function resolveMock(method: string, url: string): Promise<IBridgeMockAnswer | null> {
-	if (!port) return null
+	if (!(await waitForPort())) return null
 
 	const key = cacheKey(method, url)
 	if (knownNotMocked.has(key)) return null
@@ -149,6 +180,8 @@ export function sendLog(id: string | undefined, message: unknown): void {
 /** Test helper: drops all bridge state. */
 export function resetBridgeForTests(): void {
 	port = null
+	installedAt = 0
+	portWaiters.clear()
 	loggingEnabled = false
 	nextRequestId = 1
 	gateOpen = null

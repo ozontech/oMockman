@@ -39,4 +39,5 @@ reference internal trackers.
 ## Reporting bugs
 
 Open an issue with the browser and version, what you did, what you expected and
-what happened. For security problems follow [SECURITY.md](SECURITY.md) instead.
+what happened. For security problems, [report them privately](https://github.com/ozontech/oMockman/security/advisories/new)
+instead of opening an issue.

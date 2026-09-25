@@ -1,7 +1,7 @@
 import { fetchFullResponseHeaders } from '@/contentScript/headers'
 import { InjectBridge } from '@/contentScript/bridge'
 import { inject } from '@/contentScript/inject-to-dom'
-import { getActiveMockWithPath, getMockPaths } from '@/contentScript/match'
+import { markMockedInLog } from '@/contentScript/match'
 import { getContentPort, onContentPortMessage } from '@/contentScript/port'
 import { ContentScriptState } from '@/contentScript/state'
 import type { IEventMessage } from '@/interface/message'
@@ -15,23 +15,6 @@ import { MessageAPI } from '@/services/message/api'
 
 let state: ContentScriptState
 let bridge: InjectBridge | undefined
-
-const markMockedInLog = (log: ILog): void => {
-	if (!state || !log.request?.url || !log.request?.method) return
-	const paths = getMockPaths(log.request.url, log.request.method, {
-		urlMap: state.urlMap,
-		dynamicUrlMap: state.dynamicUrlMap,
-	})
-	const { mock, path } = getActiveMockWithPath(paths, state.store)
-	if (!state.store.active) {
-		log.isMocked = false
-		return
-	}
-	if (mock) {
-		log.isMocked = mock.active
-		log.mockPath = path ?? undefined
-	}
-}
 
 const sendLogToPanel = (id: string | undefined, log: ILog): void => {
 	const envelope: IEventMessage = {
@@ -65,7 +48,7 @@ const onInjectLog = async (id: string | undefined, message: unknown): Promise<vo
 			void 0
 		}
 
-		markMockedInLog(log)
+		markMockedInLog(log, state)
 		sendLogToPanel(id, log)
 	} catch {
 		void 0
@@ -83,7 +66,7 @@ const handleMessage = async (event: IEventMessage): Promise<void> => {
 		if (event.type === 'LOG') {
 			const log = event.message as ILog
 			if (!log?.request) return
-			markMockedInLog(log)
+			markMockedInLog(log, state)
 			sendLogToPanel(typeof event.id === 'string' ? event.id : undefined, log)
 			return
 		}
