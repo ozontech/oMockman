@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/ozontech/oMockman/actions/workflows/ci.yml"><img src="https://github.com/ozontech/oMockman/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://codecov.io/gh/ozontech/oMockman"><img src="https://codecov.io/gh/ozontech/oMockman/graph/badge.svg" alt="Coverage"></a>
+  <a href="https://github.com/ozontech/oMockman/actions/workflows/ci.yml"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fozontech%2FoMockman%2Fbadges%2Fcoverage.json" alt="Coverage"></a>
   <a href="https://github.com/ozontech/oMockman/releases"><img src="https://img.shields.io/github/v/release/ozontech/oMockman?sort=semver" alt="Release"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
   <br>

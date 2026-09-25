@@ -27,14 +27,14 @@ export default defineConfig({
 		reporters: [
 			'default',
 			'junit',
-			...(allureResults ? [['allure-vitest/reporter', { resultsDir: allureResults }] as const] : []),
+			...(allureResults ? [['allure-vitest/reporter', { resultsDir: allureResults }] as [string, Record<string, unknown>]] : []),
 		],
 		outputFile: { junit: 'junit.xml' },
 		coverage: {
 			provider: 'istanbul',
 			include: ['src/**'],
 			exclude: ['**/__tests__/**', '**/__fixtures__/**', '**/__mocks__/**', 'src/types/**', '**/*.d.ts'],
-			reporter: ['text', 'text-summary', 'json', 'html', 'cobertura', 'lcov'],
+			reporter: ['text', 'text-summary', 'json', 'json-summary', 'html', 'cobertura', 'lcov'],
 			thresholds: {
 				lines: 50,
 				statements: 50,

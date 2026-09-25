@@ -45,12 +45,40 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run vitest:coverage
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          files: coverage/lcov.info
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          retention-days: 1
+
+  coverage-badge:
+    name: Coverage badge
+    needs: unit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage-summary
+      - name: Publish to the badges branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pct=$(node -p "require('./coverage-summary.json').total.lines.pct")
+          color=$(node -p "const p = $pct; p >= 80 ? 'brightgreen' : p >= 60 ? 'green' : p >= 50 ? 'yellowgreen' : 'orange'")
+          mkdir badges && cd badges
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$pct" "$color" > coverage.json
+          cat coverage.json
+          # A one-commit orphan branch, replaced on every run: it holds only the badge file.
+          git init -q -b badges
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add coverage.json
+          git commit -q -m "Coverage ${pct}%"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges
 
   build:
     name: Build (${{ matrix.browser }})

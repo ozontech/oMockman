@@ -1,7 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "include": [
-    "playwright"
+    "playwright",
+    "playwright.config.ts",
+    "vitest.config.mts"
   ],
   "exclude": [
     "**/coverage",
