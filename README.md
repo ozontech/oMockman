@@ -82,9 +82,13 @@ Download the latest package from
 
 - **Chrome**: unzip, open `chrome://extensions`, enable *Developer mode*,
   choose *Load unpacked* and select the unzipped folder.
-- **Firefox**: open `about:debugging` → *This Firefox* → *Load Temporary
-  Add-on* and pick the `.xpi`. Release builds of Firefox install only signed
-  add-ons, so a permanent install needs Firefox Developer Edition or Nightly.
+- **Firefox**: the package is not signed by Mozilla yet, and regular Firefox
+  installs only signed add-ons. Two ways around it:
+  - open `about:debugging` → *This Firefox* → *Load Temporary Add-on* and pick
+    the `.xpi`. The add-on stays until Firefox restarts;
+  - for a permanent install use Firefox Developer Edition or Nightly: set
+    `xpinstall.signatures.required` to `false` in `about:config`, then open the
+    `.xpi`.
 
 ### From source
 
@@ -98,9 +102,9 @@ npm run build:firefox    # dist/firefox
 
 - **Chrome**: open `chrome://extensions`, enable *Developer mode*, choose *Load
   unpacked* and select `dist/chrome`.
-- **Firefox**: run `npm run pack:firefox` and install the resulting
-  `mockman-firefox.xpi`, or load `dist/firefox` through
-  `about:debugging` → *This Firefox* → *Load Temporary Add-on*.
+- **Firefox**: load `dist/firefox` through `about:debugging` → *This Firefox* →
+  *Load Temporary Add-on*, or build an `.xpi` with `npm run pack:firefox` and
+  install it the same ways as a release package above.
 
 ### Requirements
 
