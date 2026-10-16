@@ -8,7 +8,13 @@ export async function fetchFullResponseHeaders(
 		const res = await new Promise<{ headers?: { name: string; value: string }[] } | undefined>((resolve) => {
 			chrome.runtime.sendMessage(
 				{ type: 'GET_RESPONSE_HEADERS', url: normalizeUrl(url), method },
-				(response) => resolve(response as { headers?: { name: string; value: string }[] } | undefined),
+				(response) => {
+					if (chrome.runtime.lastError) {
+						resolve(undefined)
+						return
+					}
+					resolve(response as { headers?: { name: string; value: string }[] } | undefined)
+				},
 			)
 		})
 

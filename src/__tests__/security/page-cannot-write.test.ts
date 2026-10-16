@@ -51,6 +51,7 @@ describe('page cannot write to extension storage', () => {
 		vi.stubGlobal('chrome', {
 			runtime: {
 				id: 'test-extension-id',
+				getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
 				sendMessage: runtimeSendMessage,
 				connect: vi.fn(() => contentPort),
 				onMessage: { addListener: vi.fn(), removeListener: vi.fn() },

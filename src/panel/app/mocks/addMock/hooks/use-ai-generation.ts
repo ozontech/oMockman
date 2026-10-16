@@ -60,7 +60,7 @@ function describeError(response: IAIChatResponseError): AIGenerationState {
  * Builds the prompt, sends the request and puts the JSON into the editor.
  */
 export function useAIGeneration(input: IUseAIGenerationInput): IUseAIGenerationResult {
-	const { store, values, openApiOperation, onResult } = input
+	const { store, values, openApiOperation, target, onResult } = input
 	const [state, setState] = useState<AIGenerationState>(initialState)
 	const abortRef = useRef<AbortController | null>(null)
 	const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -104,6 +104,7 @@ export function useAIGeneration(input: IUseAIGenerationInput): IUseAIGenerationR
 			collection,
 			globalSystemPrompt: settings.globalSystemPrompt,
 			openApiOperation,
+			target,
 		}
 
 		const controller = new AbortController()
@@ -156,7 +157,7 @@ export function useAIGeneration(input: IUseAIGenerationInput): IUseAIGenerationR
 		onResult(prettifyJson(cleaned))
 		setState({ status: 'success' })
 		successTimer.current = setTimeout(() => setState(initialState), SUCCESS_DURATION_MS)
-	}, [store, values, openApiOperation, onResult, clearSuccessTimer])
+	}, [store, values, openApiOperation, target, onResult, clearSuccessTimer])
 
 	return { state, generate, cancel, clearError }
 }

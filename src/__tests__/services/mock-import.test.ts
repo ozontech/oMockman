@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import { classifyImport, coerceToRawMock, queuedItemToRaw } from '../../services'
+import { coerceScenario } from '../../services/mock-import'
 import type { IMockResponse } from '../../interface/mock'
 import { MethodEnum } from '../../interface'
 
@@ -17,13 +18,19 @@ vi.mock('@/panel/app/mocks/addMock/utils', () => ({
 		response: (values.response as string) || '',
 		headers: [],
 		description: (values.description as string) || '',
-		createdOn: (values.createdOn as number) || Date.now(),
+		...(typeof values.createdOn === 'number' ? { createdOn: values.createdOn } : {}),
 		dynamic: values.dynamic === true,
 		collectionId: values.collectionId as string | null,
 	})),
 }))
 
 describe('coerceToRawMock', () => {
+	it('keeps a valid request patch and drops a broken one', () => {
+		expect(coerceToRawMock({ url: '/a', requestPatch: { mode: 'merge', body: '{}' } })?.requestPatch)
+			.toEqual({ mode: 'merge', body: '{}' })
+		expect(coerceToRawMock({ url: '/a', requestPatch: { mode: 'run', body: '{}' } })?.requestPatch).toBeUndefined()
+	})
+
 	it('converts a valid object', () => {
 		const input = {
 			id: 'test-id',
@@ -178,6 +185,15 @@ describe('queuedItemToRaw', () => {
 })
 
 describe('classifyImport', () => {
+	it('keeps the creation date of an imported mock, and leaves it out when the file has none', () => {
+		const result = classifyImport([
+			{ name: 'Dated', url: '/a', status: 200, createdOn: 1791453837600 },
+			{ name: 'Undated', url: '/b', status: 200 },
+		])
+		expect(result.valid[0].createdOn).toBe(1791453837600)
+		expect('createdOn' in result.valid[1]).toBe(false)
+	})
+
 	it('imports a single mock', () => {
 		const input = { name: 'Test', url: '/api', status: 200 }
 		const result = classifyImport(input)
@@ -282,5 +298,32 @@ describe('classifyImport', () => {
 		}
 		const result = classifyImport(input)
 		expect(result.package?.version).toBe(1)
+	})
+})
+
+describe('coerceScenario', () => {
+	it('keeps the well-formed rules', () => {
+		const scenario = coerceScenario({
+			enabled: true,
+			rules: [
+				{ id: 'r1', method: 'post', url: '/a', respond: { mockId: 'm' } },
+				{ id: 'r2', method: 'GET', url: '/b', respond: { network: true } },
+				{ id: 'r3', method: 'GET', url: '/c', respond: {} },
+				{ method: 'GET' },
+			],
+		})
+
+		expect(scenario).toEqual({
+			enabled: true,
+			rules: [
+				{ id: 'r1', method: 'POST', url: '/a', respond: { mockId: 'm' } },
+				{ id: 'r2', method: 'GET', url: '/b', respond: { network: true } },
+			],
+		})
+	})
+
+	it('drops what is not a scenario', () => {
+		expect(coerceScenario({ enabled: true })).toBeUndefined()
+		expect(coerceScenario('nope')).toBeUndefined()
 	})
 })

@@ -6,6 +6,7 @@ import {
 	useGlobalStore,
 	useChromeStore,
 	useLogStore,
+	useSendStore,
 } from '../store'
 import type { LogStoreState } from '../store'
 import { Placeholder, TableWrapper, StatusBadge } from '../blocks'
@@ -15,9 +16,37 @@ import s from './logs.module.scss'
 import { getRowColor, matchesSearch } from './helpers'
 import { getMockFromLog } from './log-util'
 
+import { requestFromLog } from '@/panel/app/service/send-request'
 import { copyTextToClipboard, downloadJsonFile, getByPath } from '@/services/helper'
+import { formatFullMoment, formatMoment, isRealTimestamp } from '@/services/date-format'
 import type { ILog } from '@/interface/mock'
+import type { Translations } from '@/panel/app/i18n/translations'
 import { useRowAnimations } from '@/panel/app/common'
+
+/**
+ * Both labels share one grid cell and only one shows, so the button is as wide as the longer one
+ * in any language: Mock and Edit line up down the column.
+ */
+const MockOrEditLabel: React.FC<{ edit: boolean; t: { log_edit: string; log_mock: string } }> = ({ edit, t }) => (
+	<span className={s.labelStack}>
+		<span className={edit ? undefined : s.labelGhost} aria-hidden={!edit}>{t.log_edit}</span>
+		<span className={edit ? s.labelGhost : undefined} aria-hidden={edit}>{t.log_mock}</span>
+	</span>
+)
+
+/** What happened to a logged call: mocked, patched, sent from the panel or plain network. */
+const LogKindIcon: React.FC<{ log: ILog; t: Translations }> = ({ log, t }) =>
+	log.isMocked ? (
+		<Popup content={t.log_mockedCall} trigger={<Icon name="microchip" color="blue" data-testid="log-mocked-response-icon" />} />
+	) : log.requestPatched ? (
+		<Popup content={t.log_patchedCall} trigger={<Icon name="exchange" color="yellow" data-testid="log-mocked-request-icon" />} />
+	) : log.sentByMockman ? (
+		<Popup content={t.log_sentCall} trigger={<Icon name="paper plane" color="teal" data-testid="log-sent-icon" />} />
+	) : log.headersPatched ? (
+		<Popup content={t.log_mockedHeaders} trigger={<Icon name="microchip" color="blue" data-testid="log-mocked-headers-icon" />} />
+	) : (
+		<Popup content={t.log_networkCall} trigger={<Icon name="server" />} />
+	)
 
 const logSelector = (s: LogStoreState) => ({
 	logs: s.logs,
@@ -31,9 +60,11 @@ export const Logs: React.FC = () => {
 
 	const store = useChromeStore((s) => s.store)
 	const setSelectedMock = useChromeStore((s) => s.setSelectedMock)
+	const openSend = useSendStore((s) => s.openSend)
 
 	const isDark = useGlobalStore((s) => s.resolvedScheme === 'dark')
 	const t = useGlobalStore((s) => s.t)
+	const actionsWidth = useGlobalStore((s) => (s.lang === 'ru' ? 260 : 220))
 	const search = useGlobalStore((s) => s.search).toLowerCase()
 
 	type Row = ILog & { id: string | number }
@@ -67,12 +98,17 @@ export const Logs: React.FC = () => {
 					</div>
 				),
 				width: 60,
-				content: (log: Row) =>
-					log.isMocked ? (
-						<Popup content={t.log_mockedCall} trigger={<Icon name="microchip" color="blue" />} />
-					) : (
-						<Popup content={t.log_networkCall} trigger={<Icon name="server" />} />
-					),
+				content: (log: Row) => (
+					<span className={s.kindIcons}>
+						<LogKindIcon log={log} t={t} />
+						{log.scenario && (
+							<Popup
+								content={t.log_scenario(log.scenario.collectionName, log.scenario.callNumber, log.scenario.network)}
+								trigger={<Icon name="sitemap" color="violet" data-testid="log-scenario-icon" />}
+							/>
+						)}
+					</span>
+				),
 			},
 			{
 				header: t.mocks_colMethod,
@@ -88,6 +124,7 @@ export const Logs: React.FC = () => {
 			},
 			{
 				header: <div className={s.leftHeader}>{t.mocks_colUrl}</div>,
+				minWidth: 220,
 				content: (log: Row) => {
 					const c = getRowColor(log)
 					const url = String(log.request?.url ?? '')
@@ -120,30 +157,55 @@ export const Logs: React.FC = () => {
 				},
 			},
 			{
+				header: t.logs_colTime,
+				width: 130,
+				content: (log: Row) => (isRealTimestamp(log.time) ? (
+					<span className={s.dateCell} title={formatFullMoment(log.time, t.dateLocale)} data-testid="log-time">
+						{formatMoment(log.time, t.dateLocale, { seconds: true })}
+					</span>
+				) : '—'),
+			},
+			{
 				header: t.mocks_colStatus,
 				width: 100,
 				content: (log: Row) => <StatusBadge value={log.response?.status} inverted={isDark} />,
 			},
 			{
 				header: t.mocks_colActions,
-				width: 260,
+				width: actionsWidth,
+				stickyEnd: true,
 				content: (log: Row) => (
 					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						<Button
 							size="mini"
 							basic
 							inverted={isDark}
-							color={log.isMocked ? 'blue' : undefined}
+							color={log.isMocked || log.headersPatched ? 'blue' : log.requestPatched ? 'yellow' : undefined}
 							onClick={(e) => {
 								e.stopPropagation()
 								const mock =
-									log.isMocked && log.mockPath
+									(log.isMocked || log.isPatched) && log.mockPath
 										? getByPath(store, log.mockPath, {})
 										: getMockFromLog(log)
 								setSelectedMock(mock)
 							}}
+							data-testid="log-create-mock-button"
 						>
-							{log.isMocked ? t.log_edit : t.log_mock}
+							<MockOrEditLabel edit={Boolean(log.isMocked || (log.isPatched && log.mockPath))} t={t} />
+						</Button>
+						<Button
+							icon
+							basic
+							color="teal"
+							className={s.actionDeleteBtn}
+							title={t.log_replay}
+							onClick={(e) => {
+								e.stopPropagation()
+								openSend(requestFromLog(log))
+							}}
+							data-testid="log-send-button"
+						>
+							<Icon name="paper plane" className={s.actionDeleteIcon} />
 						</Button>
 						<Button
 							icon
@@ -174,6 +236,7 @@ export const Logs: React.FC = () => {
 									useLogStore.setState((state) => ({ logs: state.logs.filter((l) => l.id !== log.id) }))
 								})
 							}}
+							data-testid="log-delete-button"
 						>
 							<Icon name="trash" className={s.actionDeleteIcon} />
 						</Button>
@@ -181,7 +244,7 @@ export const Logs: React.FC = () => {
 				),
 			},
 		],
-		[isDark, t, store, setSelectedMock, rows.length],
+		[isDark, t, store, setSelectedMock, rows.length, actionsWidth],
 	)
 
 	if (!logs.length) {

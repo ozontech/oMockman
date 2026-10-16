@@ -103,6 +103,35 @@ describe('usePanelListener', () => {
 		expect(addBulkMock.mock.calls[0][0]).toHaveLength(1)
 	})
 
+	it('names a recorded mock from the endpoint path, as one made from a log by hand', () => {
+		useGlobalStore.setState({ recording: true })
+		renderHook(() => usePanelListener(meta))
+		const handler = port.onMessage.addListener.mock.calls[0][0] as (msg: unknown) => void
+
+		act(() => handler({
+			type: 'LOG',
+			sourceTabId: 42,
+			message: { ...log(), request: { url: 'https://api.example.com/v3/tasks/query', method: 'POST', headers: [] } },
+		}))
+		act(() => {
+			useGlobalStore.getState().toggleRecording()
+		})
+
+		expect(addBulkMock.mock.calls[0][0][0].name).toBe('v3-tasks-query')
+	})
+
+	it('stamps a log that came without a time', () => {
+		useGlobalStore.setState({ loggingEnabled: true } as never)
+		renderHook(() => usePanelListener(meta))
+		const handler = port.onMessage.addListener.mock.calls[0][0] as (msg: unknown) => void
+		const before = Date.now()
+
+		act(() => handler({ type: 'LOG', sourceTabId: 42, message: { ...log(), time: undefined } }))
+
+		const [logged] = useLogStore.getState().logs
+		expect(logged?.time ?? 0).toBeGreaterThanOrEqual(before)
+	})
+
 	it('picks up the inspected host from an INIT message', () => {
 		const { result } = renderHook(() => usePanelListener(meta))
 		const handler = port.onMessage.addListener.mock.calls[0][0] as (msg: unknown) => void

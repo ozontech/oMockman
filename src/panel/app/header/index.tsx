@@ -72,9 +72,11 @@ export const Header: React.FC = () => {
 							onClick={handleAddMock}
 							className={s.addMockBtn}
 							title={t.header_addMock}
+							aria-label={t.header_addMock}
+							data-testid="add-mock-button"
 						>
 							<Icon name="add" />
-							{t.header_addMock}
+							<span className={s.btnLabel}>{t.header_addMock}</span>
 						</Button>
 					</span>
 
@@ -88,9 +90,11 @@ export const Header: React.FC = () => {
 							onClick={() => createCollection(null)}
 							className={s.addMockBtn}
 							title={t.header_addCollection}
+							aria-label={t.header_addCollection}
+							data-testid="add-collection-button"
 						>
 							<Icon name="folder" />
-							{t.header_addCollection}
+							<span className={s.btnLabel}>{t.header_addCollection}</span>
 						</Button>
 					</span>
 
@@ -100,12 +104,12 @@ export const Header: React.FC = () => {
 				</div>
 
 				<Input
-					size="small"
 					value={search}
 					placeholder={t.header_search}
 					onChange={(e) => setSearch(e.currentTarget.value)}
 					icon={<Icon name="search" />}
 					className={`${isDark ? 'inverted' : ''} ${s.searchInput}`}
+					data-testid="search-input"
 				/>
 
 				<RecordButton />

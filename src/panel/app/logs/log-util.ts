@@ -1,5 +1,6 @@
 import type { ILog, IMockResponseRaw } from '@/interface/mock'
 import { MethodEnum } from '@/interface/network'
+import { RESPONSE_MOCK_APPLY } from '@/services/mock-apply'
 
 const getEndpointName = (rawUrl: string | undefined): string => {
 	const raw = String(rawUrl ?? '').trim()
@@ -25,4 +26,8 @@ export const getMockFromLog = (log: ILog): IMockResponseRaw => ({
 	delay: undefined,
 	description: '',
 	headers: log.response?.headers ?? [],
+	apply: { ...RESPONSE_MOCK_APPLY },
+	requestPatch: log.request?.originalBody ?? log.request?.body
+		? { mode: 'replace', body: log.request?.originalBody ?? log.request?.body ?? '' }
+		: undefined,
 })

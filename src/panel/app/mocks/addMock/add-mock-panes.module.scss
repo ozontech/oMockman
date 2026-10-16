@@ -32,6 +32,12 @@
   white-space: nowrap;
 }
 
+.generateLocked.generateLocked {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
 .generateDone.generateDone {
   &:global(.ui.basic.button),
   &:global(.ui.basic.button.disabled) {
@@ -182,4 +188,48 @@
 
 :global(body.dark) .addHeaderBtn {
   border-color: #ffffff;
+}
+
+
+.applyTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.2s ease;
+}
+
+.applyTabOff {
+  opacity: 0.55;
+}
+
+.applySwitch.applySwitch {
+  min-height: 0;
+  transform: scale(0.7);
+  transform-origin: left center;
+  margin-right: -14px;
+}
+
+
+.applyBody {
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease;
+}
+
+.sectionOff {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .applyTab,
+  .applyBody {
+    transition: none;
+  }
+}
+
+:global(body.dark) .applySwitch :global(label::before) {
+  background-color: rgb(255 255 255 / 18%) !important;
 }

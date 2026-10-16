@@ -346,3 +346,9 @@ body.dark .mockingBtn.off {
 	background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+
+.dateCell {
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

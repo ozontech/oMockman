@@ -2,6 +2,7 @@
 import { BRIDGE_HANDSHAKE } from '@/interface/bridge'
 import type { BridgeContentMessage, BridgeInjectMessage, IBridgeMockAnswer } from '@/interface/bridge'
 import { normalizeUrl } from '@/services/url'
+import { sendFromPage } from '@/inject/sender'
 
 const MATCH_TIMEOUT_MS = 1500
 const NEGATIVE_CACHE_LIMIT = 1000
@@ -14,17 +15,31 @@ const GATE_TIMEOUT_MS = 300
  * requests of the first second.
  */
 const CONNECT_WAIT_MS = 1000
+/**
+ * Logs beyond this rate are dropped before any body is read: only a page firing hundreds of
+ * requests a second gets there. Repeats of a request logged a moment ago, like polling, go
+ * first: they may use only the top of the budget, a new request all of it.
+ */
+const LOG_BURST = 300
+const LOG_RATE_PER_SECOND = 100
+const REPEAT_RESERVE = LOG_BURST / 2
+const REPEAT_WINDOW_MS = 10_000
+const RECENT_LOGS_LIMIT = 1000
 
 let port: MessagePort | null = null
 let installedAt = 0
 const portWaiters = new Set<() => void>()
 let loggingEnabled = false
+let logTokens = LOG_BURST
+let logTokensAt = 0
+/** When each method and URL (without the query) was last logged, oldest first. */
+const recentlyLogged = new Map<string, number>()
 let nextRequestId = 1
 /** Whether this origin may be served; null until the isolated world says. */
 let gateOpen: boolean | null = null
 const gateWaiters = new Set<(open: boolean) => void>()
 
-const pending = new Map<number, (answer: IBridgeMockAnswer | null) => void>()
+const pending = new Map<number, (answer: IBridgeMockAnswer | null, noCache: boolean) => void>()
 const knownNotMocked = new Set<string>()
 
 const cacheKey = (method: string, url: string): string =>
@@ -35,7 +50,7 @@ function handleContentMessage(message: BridgeContentMessage): void {
 		const resolve = pending.get(message.id)
 		if (!resolve) return
 		pending.delete(message.id)
-		resolve(message.mock)
+		resolve(message.mock, message.noCache === true)
 		return
 	}
 	if (message.k === 'epoch') {
@@ -44,6 +59,10 @@ function handleContentMessage(message: BridgeContentMessage): void {
 	}
 	if (message.k === 'logging') {
 		loggingEnabled = message.enabled
+		return
+	}
+	if (message.k === 'send') {
+		void sendFromPage(message.request).then((result) => post({ k: 'send:res', id: message.id, result }))
 		return
 	}
 	if (message.k === 'gate') {
@@ -139,7 +158,7 @@ export function isLoggingEnabled(): boolean {
 }
 
 /** Resolves to null, i.e. go to the network, when the bridge is unavailable or too slow. */
-export async function resolveMock(method: string, url: string): Promise<IBridgeMockAnswer | null> {
+export async function resolveMock(method: string, url: string, logId?: string): Promise<IBridgeMockAnswer | null> {
 	if (!(await waitForPort())) return null
 
 	const key = cacheKey(method, url)
@@ -153,13 +172,13 @@ export async function resolveMock(method: string, url: string): Promise<IBridgeM
 
 	return new Promise<IBridgeMockAnswer | null>((resolve) => {
 		let settled = false
-		const finish = (answer: IBridgeMockAnswer | null, answered: boolean) => {
+		const finish = (answer: IBridgeMockAnswer | null, answered: boolean, noCache = false) => {
 			if (settled) return
 			settled = true
 			clearTimeout(timer)
 			pending.delete(id)
 			// Only a real "not mocked" answer is cached: a timeout says nothing about the mock set.
-			if (answered && !answer) {
+			if (answered && !answer && !noCache) {
 				if (knownNotMocked.size >= NEGATIVE_CACHE_LIMIT) knownNotMocked.clear()
 				knownNotMocked.add(key)
 			}
@@ -167,9 +186,35 @@ export async function resolveMock(method: string, url: string): Promise<IBridgeM
 		}
 
 		const timer = setTimeout(() => finish(null, false), MATCH_TIMEOUT_MS)
-		pending.set(id, (answer) => finish(answer, true))
-		post({ k: 'match', id, method: String(method || 'GET'), url: String(url || '') })
+		pending.set(id, (answer, noCache) => finish(answer, true, noCache))
+		post({ k: 'match', id, method: String(method || 'GET'), url: String(url || ''), logId })
 	})
+}
+
+/**
+ * Asked before a request is logged, and so before its body is read. False while logging is off,
+ * and when the rate limit is spent. A dropped repeat does not count as logged, so a polled URL
+ * still shows up once the repeat window has passed.
+ */
+export function takeLogSlot(method: string, url: string): boolean {
+	if (!loggingEnabled) return false
+	const now = Date.now()
+	logTokens = Math.min(LOG_BURST, logTokens + ((now - logTokensAt) / 1000) * LOG_RATE_PER_SECOND)
+	logTokensAt = now
+
+	const key = `${String(method || 'GET').toUpperCase()} ${normalizeUrl(url)}`
+	const lastLogged = recentlyLogged.get(key)
+	const isRepeat = lastLogged !== undefined && now - lastLogged < REPEAT_WINDOW_MS
+	if (logTokens - 1 < (isRepeat ? REPEAT_RESERVE : 0)) return false
+
+	logTokens -= 1
+	recentlyLogged.delete(key)
+	recentlyLogged.set(key, now)
+	if (recentlyLogged.size > RECENT_LOGS_LIMIT) {
+		const oldest = recentlyLogged.keys().next().value
+		if (oldest !== undefined) recentlyLogged.delete(oldest)
+	}
+	return true
 }
 
 export function sendLog(id: string | undefined, message: unknown): void {
@@ -183,6 +228,9 @@ export function resetBridgeForTests(): void {
 	installedAt = 0
 	portWaiters.clear()
 	loggingEnabled = false
+	logTokens = LOG_BURST
+	logTokensAt = 0
+	recentlyLogged.clear()
 	nextRequestId = 1
 	gateOpen = null
 	gateWaiters.clear()

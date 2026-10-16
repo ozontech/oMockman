@@ -2,13 +2,7 @@ import { MessageService as base } from './index'
 
 import type { IEventMessage } from '@/interface/message'
 import type { ApplyMocksPayload } from '@/interface/xhr'
-
-type ExtApi = typeof chrome
-
-const ext = (
-	(globalThis as unknown as { browser?: ExtApi }).browser
-	?? (globalThis as unknown as { chrome?: ExtApi }).chrome
-) as ExtApi | undefined
+import { messageTopFrame } from '@/panel/app/service/tab-message'
 
 export const MessageAPI = {
 	notifyUpdateStore(tabId?: number) {
@@ -19,32 +13,18 @@ export const MessageAPI = {
 		}
 	},
 
+	/** A nudge to re-read the store right away; the storage change delivers the mocks either way. */
 	applyMocksNow(tabId?: number, active?: boolean) {
+		if (typeof tabId !== 'number') return
 		const payload: ApplyMocksPayload = { kind: 'APPLY_MOCKS', active }
-		if (typeof tabId === 'number') {
-			try {
-				const fn = ext?.tabs?.sendMessage as unknown as ((...args: unknown[]) => unknown) | undefined
-				if (!fn) return
-
-				const msg = {
-					message: payload,
-					from: 'PANEL',
-					to: 'CONTENT',
-					type: 'NOTIFICATION',
-					id: tabId,
-					extensionName: 'MOCKMAN',
-				}
-				const arity = (fn as unknown as { length: number }).length
-				if (arity >= 3) {
-					if (arity >= 4) fn(tabId, msg, undefined, () => void 0)
-					else fn(tabId, msg, () => void 0)
-					return
-				}
-				void Promise.resolve(fn(tabId, msg)).catch(() => void 0)
-			} catch (e) {
-				void e
-			}
-		}
+		void messageTopFrame(tabId, {
+			message: payload,
+			from: 'PANEL',
+			to: 'CONTENT',
+			type: 'NOTIFICATION',
+			id: tabId,
+			extensionName: 'MOCKMAN',
+		})
 	},
 
 	initFromContent(host: string) {

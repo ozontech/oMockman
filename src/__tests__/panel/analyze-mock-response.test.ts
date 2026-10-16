@@ -5,6 +5,7 @@ import {
 	analyzeMockResponseByOpenApi,
 	initialOpenApiValidationState,
 } from '../../panel/app/mocks/addMock/openapi-analysis'
+import { clearOpenApiSpecCache } from '../../panel/app/mocks/addMock/openapi-spec-gateway'
 
 type SendMessage = (...args: unknown[]) => Promise<unknown>
 
@@ -16,6 +17,8 @@ describe('analyzeMockResponseByOpenApi', () => {
 	let sendMessageSpy: MockInstance<SendMessage>
 
 	beforeEach(() => {
+		// Every test serves its own spec under the same URL.
+		clearOpenApiSpecCache()
 		sendMessageSpy = vi.spyOn(browserRuntime(), 'sendMessage').mockResolvedValue({
 			ok: true,
 			sourceUrl: 'https://api.example.com/openapi.json',
@@ -466,5 +469,114 @@ describe('analyzeMockResponseByOpenApi', () => {
 			const result = await analyze({ badge: 'bogus' })
 			expect(result.issues.length).toBeGreaterThan(0)
 		})
+	})
+
+	describe('request body', () => {
+		const orderSpec = {
+			openapi: '3.0.0',
+			info: { title: 'Test', version: '1.0' },
+			paths: {
+				'/orders': {
+					post: {
+						requestBody: { $ref: '#/components/requestBodies/Order' },
+						responses: { 200: { content: { 'application/json': { schema: { type: 'object' } } } } },
+					},
+				},
+			},
+			components: {
+				requestBodies: {
+					Order: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Order' } } } },
+				},
+				schemas: {
+					Order: {
+						type: 'object',
+						required: ['qty'],
+						properties: { qty: { type: 'integer' }, status: { type: 'string', enum: ['new', 'done'] } },
+					},
+				},
+			},
+		}
+
+		const analyze = (body: string) => analyzeMockResponseByOpenApi({
+			specUrl: 'https://api.example.com/openapi.json',
+			requestUrl: 'https://api.example.com/orders',
+			method: 'POST',
+			status: 200,
+			responseBody: body,
+			target: 'request',
+		})
+
+		it('checks the body against the requestBody schema behind a $ref', async () => {
+			setMockResponse({ ok: true, sourceUrl: 'https://api.example.com/openapi.json', spec: orderSpec })
+
+			const result = await analyze('{"qty":"many","status":"lost"}')
+
+			expect(result.status).toBe('ready')
+			expect(result.issues.map((issue) => issue.path).sort()).toEqual(['$.qty', '$.status'])
+			expect(result.responseSchema).toMatchObject({ required: ['qty'] })
+		})
+
+		it('reads the body schema from a Swagger 2 body parameter', async () => {
+			setMockResponse({
+				ok: true,
+				sourceUrl: 'https://api.example.com/swagger.json',
+				spec: {
+					swagger: '2.0',
+					info: { title: 'Test', version: '1.0' },
+					paths: {
+						'/orders': {
+							post: {
+								parameters: [{ in: 'body', name: 'body', schema: { type: 'object', required: ['qty'] } }],
+								responses: {},
+							},
+						},
+					},
+				},
+			})
+
+			const result = await analyze('{}')
+
+			expect(result.status).toBe('ready')
+			expect(result.issues).toHaveLength(1)
+		})
+
+		it('says when the operation takes no body', async () => {
+			setMockResponse({
+				ok: true,
+				sourceUrl: 'https://api.example.com/openapi.json',
+				spec: { ...orderSpec, paths: { '/orders': { post: { responses: {} } } } },
+			})
+
+			const result = await analyze('{}')
+
+			expect(result.status).toBe('error')
+			expect(result.message).toMatch(/Request body schema is not defined/)
+		})
+	})
+
+	it('does not check a body over the limit against the schema, but keeps the schema for AI', async () => {
+		setMockResponse({
+			ok: true,
+			sourceUrl: 'https://api.example.com/openapi.json',
+			spec: {
+				openapi: '3.0.0',
+				info: { title: 'Test', version: '1.0' },
+				paths: { '/items': { get: { responses: { 200: { content: { 'application/json': { schema: { type: 'object', required: ['total'] } } } } } } } },
+			},
+		})
+		const body = JSON.stringify({ items: 'x'.repeat(600 * 1024) })
+
+		const result = await analyzeMockResponseByOpenApi({
+			specUrl: 'https://api.example.com/openapi.json',
+			requestUrl: 'https://api.example.com/items',
+			method: 'GET',
+			status: 200,
+			responseBody: body,
+		})
+
+		expect(result.status).toBe('ready')
+		expect(result.bodyCheckSkipped).toBe(body.length)
+		expect(result.issues).toEqual([])
+		expect(result.responseSchema).toMatchObject({ required: ['total'] })
 	})
 })

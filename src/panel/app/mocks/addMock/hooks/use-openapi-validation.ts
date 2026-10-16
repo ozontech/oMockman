@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { analyzeMockResponseByOpenApi, initialOpenApiValidationState } from '../openapi-analysis'
+import type { OpenApiBodyTarget } from '../openapi-analysis'
 
 import { safeNumberInt } from '@/services/number'
 import { MethodEnum } from '@/interface/network'
@@ -12,6 +13,8 @@ interface UseOpenApiValidationInput {
 	method?: string
 	status?: number
 	responseBody?: string
+	/** Which body `responseBody` is; the request body is checked against the operation's requestBody. */
+	target?: OpenApiBodyTarget
 }
 
 export function useOpenApiValidation(input: UseOpenApiValidationInput): OpenApiValidationState {
@@ -56,6 +59,7 @@ export function useOpenApiValidation(input: UseOpenApiValidationInput): OpenApiV
 				method: String(input.method ?? MethodEnum.GET),
 				status: statusParsed,
 				responseBody: String(input.responseBody ?? ''),
+				target: input.target,
 			}).then((result) => {
 				clearTimeout(watchdog)
 				if (analysisRequestId.current !== requestId) return
@@ -75,7 +79,7 @@ export function useOpenApiValidation(input: UseOpenApiValidationInput): OpenApiV
 		}, 450)
 
 		return () => clearTimeout(timer)
-	}, [input.openApiUrl, input.requestUrl, input.method, input.status, input.responseBody])
+	}, [input.openApiUrl, input.requestUrl, input.method, input.status, input.responseBody, input.target])
 
 	return openApiValidation
 }

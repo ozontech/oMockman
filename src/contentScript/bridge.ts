@@ -1,13 +1,25 @@
 /** Isolated-world side of the bridge: owns the mocks and answers one request at a time. */
 import { getActiveMockWithPath, getMockPaths } from '@/contentScript/match'
 import type { ContentScriptState } from '@/contentScript/state'
+import type { ScenarioHit, ScenarioRuntime } from '@/contentScript/scenario'
+import type { IMockResponse } from '@/interface/mock'
 import { BRIDGE_HANDSHAKE } from '@/interface/bridge'
-import type { BridgeContentMessage, BridgeInjectMessage, IBridgeMockAnswer } from '@/interface/bridge'
+import type {
+	BridgeContentMessage,
+	BridgeInjectMessage,
+	IBridgeMockAnswer,
+	ISendRequest,
+	ISendResult,
+} from '@/interface/bridge'
 import { safeNumberInt } from '@/services/number'
 import { hasAnyPermission } from '@/services/origin'
+import { coerceRequestPatch } from '@/services/request-patch'
+import { resolveMockApply } from '@/services/mock-apply'
 
 const HANDSHAKE_RETRY_MS = 50
 const HANDSHAKE_TIMEOUT_MS = 5000
+/** The page gives up after 60 s; this only covers a page that never answers. */
+const SEND_ANSWER_TIMEOUT_MS = 65_000
 
 /** Headers that would corrupt a synthesized response if copied verbatim. */
 const DROPPED_MOCK_HEADERS = new Set(['content-encoding', 'transfer-encoding', 'content-length'])
@@ -15,12 +27,17 @@ const DROPPED_MOCK_HEADERS = new Set(['content-encoding', 'transfer-encoding', '
 export interface BridgeHost {
 	getState: () => ContentScriptState | undefined
 	onLog: (id: string | undefined, message: unknown) => void
+	/** Set in the top frame only: collection scenarios run there. */
+	scenarios?: ScenarioRuntime
+	onScenarioHit?: (logId: string | undefined, hit: ScenarioHit) => void
 }
 
 export class InjectBridge {
 	private port: MessagePort | null = null
 	private epoch = 0
 	private acked = false
+	private nextSendId = 1
+	private readonly sends = new Map<number, (result: ISendResult) => void>()
 
 	constructor(private readonly host: BridgeHost) {}
 
@@ -79,6 +96,32 @@ export class InjectBridge {
 		return this.acked
 	}
 
+	/** Has the page send a request for the panel, on a site the user allowed. */
+	sendRequest(request: ISendRequest): Promise<ISendResult> {
+		const state = this.host.getState()
+		if (!state?.store || !hasAnyPermission(state.store, state.origin)) {
+			return Promise.resolve({ ok: false, reason: 'not_allowed', error: 'Mockman is not allowed on this site.' })
+		}
+		if (!this.acked || !this.port) {
+			return Promise.resolve({ ok: false, reason: 'unavailable', error: 'The page is not connected to Mockman yet.' })
+		}
+
+		const id = this.nextSendId
+		this.nextSendId += 1
+		return new Promise<ISendResult>((resolve) => {
+			const timer = setTimeout(() => {
+				this.sends.delete(id)
+				resolve({ ok: false, reason: 'unavailable', error: 'The page did not answer.' })
+			}, SEND_ANSWER_TIMEOUT_MS)
+			this.sends.set(id, (result) => {
+				clearTimeout(timer)
+				this.sends.delete(id)
+				resolve(result)
+			})
+			this.send({ k: 'send', id, request })
+		})
+	}
+
 	private send(message: BridgeContentMessage): void {
 		try {
 			this.port?.postMessage(message)
@@ -97,33 +140,69 @@ export class InjectBridge {
 			this.host.onLog(message.id, message.message)
 			return
 		}
+		if (message.k === 'send:res') {
+			this.sends.get(message.id)?.(message.result)
+			return
+		}
 		if (message.k === 'match') {
-			this.send({ k: 'match:res', id: message.id, mock: this.findMock(message.method, message.url) })
+			const { mock, noCache } = this.findMock(message.method, message.url, message.logId)
+			this.send({ k: 'match:res', id: message.id, mock, ...(noCache ? { noCache } : {}) })
 		}
 	}
 
-	private findMock(method: string, url: string): IBridgeMockAnswer | null {
+	/**
+	 * A scenario rule first (top frame only: one flow per tab), then the usual mock for the
+	 * endpoint. The page sends only method and url, so it cannot widen its own access.
+	 */
+	private findMock(method: string, url: string, logId?: string): { mock: IBridgeMockAnswer | null; noCache: boolean } {
 		const state = this.host.getState()
-		if (!state || !state.store?.active) return null
+		if (!state || !state.store?.active) return { mock: null, noCache: false }
+		if (!hasAnyPermission(state.store, state.origin)) return { mock: null, noCache: false }
 
-		// Checked here, in the isolated world: the page sends only method and url, so it cannot
-		// widen its own access.
-		if (!hasAnyPermission(state.store, state.origin)) return null
+		if (this.host.scenarios) {
+			const { hit, tracked } = this.host.scenarios.match(state.store, method, url)
+			if (hit) this.host.onScenarioHit?.(logId, hit)
+			if (hit) return { mock: hit.mock ? answerFor(hit.mock) : null, noCache: true }
+			if (tracked) return { mock: this.findEndpointMock(method, url), noCache: true }
+		}
+		return { mock: this.findEndpointMock(method, url), noCache: false }
+	}
 
+	private findEndpointMock(method: string, url: string): IBridgeMockAnswer | null {
+		const state = this.host.getState()
+		if (!state) return null
 		const paths = getMockPaths(url, method, {
 			urlMap: state.urlMap,
 			dynamicUrlMap: state.dynamicUrlMap,
 		})
 		const { mock } = getActiveMockWithPath(paths, state.store)
-		if (!mock) return null
+		return mock ? answerFor(mock) : null
+	}
+}
 
-		return {
-			status: mock.status ?? 200,
-			response: mock.response ?? '',
-			headers: (mock.headers ?? [])
-				.filter(({ name }) => !DROPPED_MOCK_HEADERS.has(String(name || '').toLowerCase()))
-				.map(({ name, value }) => ({ name, value })),
-			delay: mock.delay == null ? undefined : safeNumberInt(String(mock.delay)) ?? undefined,
-		}
+/** What the page gets for a mock: the response to serve, or the changes to make on the way to the network. */
+function answerFor(mock: IMockResponse): IBridgeMockAnswer | null {
+	const apply = resolveMockApply(mock)
+	const headers = (mock.headers ?? [])
+		.filter(({ name }) => !DROPPED_MOCK_HEADERS.has(String(name || '').toLowerCase()))
+		.map(({ name, value }) => ({ name, value }))
+	const delay = mock.delay == null ? undefined : safeNumberInt(String(mock.delay)) ?? undefined
+
+	if (apply.responseBody) {
+		return { status: mock.status ?? 200, response: mock.response ?? '', headers: apply.responseHeaders ? headers : [], delay }
+	}
+
+	const requestPatch = apply.requestBody ? coerceRequestPatch(mock.requestPatch) : undefined
+	const responseHeaders = apply.responseHeaders && headers.length > 0 ? headers : undefined
+	if (!requestPatch && !responseHeaders) return null
+	return {
+		status: 0,
+		response: '',
+		headers: [],
+		delay,
+		network: {
+			...(requestPatch ? { requestPatch } : {}),
+			...(responseHeaders ? { responseHeaders } : {}),
+		},
 	}
 }

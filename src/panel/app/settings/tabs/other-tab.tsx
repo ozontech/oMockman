@@ -88,6 +88,7 @@ export const OtherTab: React.FC<SettingsTabProps> = ({ isDark }) => {
 							value={opt.value}
 							checked={draftLang === opt.value}
 							onChange={() => setDraftLang(opt.value)}
+							data-testid={`lang-${opt.value}`}
 						/>
 						{opt.label}
 					</label>

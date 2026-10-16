@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
-import { BLOCKED_HEADERS, buildHeadersMap, parseAllResponseHeaders, safeCall, scheduleComplete } from '../../inject/http-utils'
+import { BLOCKED_HEADERS, buildHeadersMap, parseAllResponseHeaders } from '../../inject/http-utils'
 
 describe('buildHeadersMap', () => {
 	it('builds a header map from a valid array', () => {
@@ -133,100 +133,6 @@ describe('parseAllResponseHeaders', () => {
 
 	it('handles a CRLF-only string', () => {
 		expect(parseAllResponseHeaders('\r\n\r\n')).toEqual([])
-	})
-})
-
-describe('safeCall', () => {
-	it('calls the handler', () => {
-		const handler = vi.fn()
-		const mockXhr = {} as XMLHttpRequest
-		const event = new Event('test')
-
-		safeCall(handler, mockXhr, event)
-		expect(handler).toHaveBeenCalled()
-	})
-
-	it('handles a null handler', () => {
-		const mockXhr = {} as XMLHttpRequest
-		const event = new Event('test')
-
-		expect(() => safeCall(null, mockXhr, event)).not.toThrow()
-	})
-
-	it('handles an undefined handler', () => {
-		const mockXhr = {} as XMLHttpRequest
-		const event = new Event('test')
-
-		expect(() => safeCall(undefined, mockXhr, event)).not.toThrow()
-	})
-
-	it('does not rethrow a handler error', () => {
-		const handler = vi.fn(() => {
-			throw new Error('Handler error')
-		})
-		const mockXhr = {} as XMLHttpRequest
-		const event = new Event('test')
-
-		expect(() => safeCall(handler, mockXhr, event)).not.toThrow()
-		expect(handler).toHaveBeenCalled()
-	})
-
-	it('binds this to the XMLHttpRequest', () => {
-		const mockXhr = {} as XMLHttpRequest
-		const event = new Event('test')
-
-		const contextCapture = { captured: false }
-		const handler = function (this: { captured: boolean }) {
-			this.captured = true
-		}
-		const boundHandler = handler.bind(contextCapture)
-
-		safeCall(boundHandler as unknown as (this: XMLHttpRequest, ev: Event) => unknown, mockXhr, event)
-		expect(contextCapture.captured).toBe(true)
-	})
-})
-
-describe('scheduleComplete', () => {
-	it('uses setTimeout for a positive delay', () => {
-		const cb = vi.fn()
-		vi.useFakeTimers()
-		scheduleComplete(100, cb)
-
-		expect(cb).not.toHaveBeenCalled()
-		vi.advanceTimersByTime(100)
-		expect(cb).toHaveBeenCalled()
-		vi.useRealTimers()
-	})
-
-	it('uses setTimeout for a zero delay', async () => {
-		const cb = vi.fn()
-		vi.useFakeTimers()
-		scheduleComplete(0, cb)
-
-		expect(cb).not.toHaveBeenCalled()
-		vi.runAllTimers()
-		await Promise.resolve()
-		expect(cb).toHaveBeenCalled()
-		vi.useRealTimers()
-	})
-
-	it('uses queueMicrotask for a negative delay', async () => {
-		const cb = vi.fn()
-		scheduleComplete(-1, cb)
-		await Promise.resolve()
-		expect(cb).toHaveBeenCalled()
-	})
-
-	it('does not call setTimeout for a negative delay (queueMicrotask is used)', async () => {
-		const cb = vi.fn()
-		vi.useFakeTimers()
-		scheduleComplete(-10, cb)
-
-		expect(cb).not.toHaveBeenCalled()
-		vi.runAllTimers()
-		await Promise.resolve()
-		expect(cb).toHaveBeenCalled()
-		vi.useRealTimers()
 	})
 })
 

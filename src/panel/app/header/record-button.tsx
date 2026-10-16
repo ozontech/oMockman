@@ -33,6 +33,7 @@ export const RecordButton: React.FC = () => {
 			aria-pressed={recording}
 			aria-label={t.header_record}
 			onClick={handleClick}
+			data-testid="record-button"
 		>
 			<Icon name="circle" />
 		</Button>

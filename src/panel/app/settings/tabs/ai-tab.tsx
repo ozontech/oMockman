@@ -31,11 +31,12 @@ export const AITab: React.FC<SettingsTabProps> = ({ isDark }) => {
 
 	const handleSubmitProvider = useCallback(
 		async (values: Parameters<Parameters<typeof ProviderForm>[0]['onSubmit']>[0]) => {
+			const { apiKey, ...input } = values
 			if (providerFormState.mode === 'edit') {
-				await updateProvider(providerFormState.provider.id, values)
+				await updateProvider(providerFormState.provider.id, input, apiKey)
 				return
 			}
-			await addProvider(values)
+			await addProvider(input, apiKey)
 		},
 		[providerFormState, addProvider, updateProvider],
 	)
@@ -45,7 +46,6 @@ export const AITab: React.FC<SettingsTabProps> = ({ isDark }) => {
 			const provider = await addProvider({
 				name: preset.name,
 				baseURL: preset.baseURL,
-				apiKey: '',
 				model: preset.model,
 				authHeader: preset.authHeader,
 				authPrefix: preset.authPrefix,

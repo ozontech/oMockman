@@ -1,0 +1,337 @@
+$violet: #6435c9;
+$ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+.editor {
+  --sc-surface: #f7f8fa;
+  --sc-surface-hover: #f0f2f5;
+  --sc-field: #fff;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 760px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  transition: opacity 0.2s $ease;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rules {
+  width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+
+  th {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--muted-text);
+    background: var(--sc-surface);
+
+    &:first-child {
+      border-top-left-radius: 8px;
+    }
+
+    &:last-child {
+      border-top-right-radius: 8px;
+    }
+  }
+
+  td {
+    padding: 6px;
+    vertical-align: middle;
+  }
+
+  tbody tr + tr td {
+    border-top: 1px solid var(--border);
+  }
+
+  tbody tr.sameEndpoint td {
+    border-top: 1px dashed var(--border);
+  }
+
+  tbody tr.groupGap td,
+  tbody tr.groupGap:hover td {
+    height: 10px;
+    padding: 0;
+    background: var(--sc-surface);
+  }
+
+  tbody tr.groupGap + tr td {
+    border-top: 1px solid var(--border);
+  }
+
+  tbody tr td {
+    transition: background 0.15s $ease;
+  }
+
+  tbody tr:hover td {
+    background: var(--sc-surface);
+  }
+
+  tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+
+  tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+  }
+
+  :global(.ui.selection.dropdown) {
+    min-width: 0;
+    min-height: 32px;
+    padding: 7px 28px 7px 10px;
+    font-size: 13px;
+    line-height: 16px;
+    background: var(--sc-field);
+  }
+
+  :global(.ui.selection.dropdown > .dropdown.icon) {
+    padding: 8px 10px;
+  }
+
+  :global(.ui.search.selection.dropdown > input.search) {
+    padding: 7px 28px 7px 10px;
+    line-height: 16px;
+  }
+
+  :global(.ui.selection.dropdown > .text) {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.ui.selection.dropdown .menu > .item) {
+    padding: 8px 10px !important;
+    font-size: 13px;
+  }
+}
+
+.rules th.center {
+  text-align: center;
+}
+
+.headerHint {
+  border-bottom: 1px dotted currentcolor;
+  cursor: help;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  font: inherit;
+  color: var(--muted-text);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s $ease, background 0.15s $ease;
+
+  :global(i.icon) {
+    margin: 0;
+  }
+}
+
+.number {
+  width: 72px;
+  font-weight: 700;
+  text-align: center !important;
+  white-space: nowrap;
+  color: var(--muted-text);
+}
+
+.endpointCell {
+  min-width: 220px;
+}
+
+.respondCell {
+  width: 24%;
+}
+
+.rowActions {
+  width: 96px;
+  white-space: nowrap;
+}
+
+.iconButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 13px;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--sc-surface-hover);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+.danger:hover:not(:disabled) {
+  color: #db2828;
+  background: rgb(219 40 40 / 10%);
+}
+
+.addLine {
+  display: flex;
+  gap: 8px;
+}
+
+.addButton.addButton {
+  margin: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 24px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--muted-text);
+
+  p {
+    max-width: 440px;
+    margin: 4px 0 6px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  :global(i.icon) {
+    color: $violet;
+    opacity: 0.6;
+  }
+}
+
+.dark {
+  --sc-surface: #2a2a2a;
+  --sc-surface-hover: #333;
+  --sc-field: #1b1b1b;
+
+  .empty :global(i.icon) {
+    color: #a585ec;
+  }
+
+  :global(.ui.selection.dropdown),
+  :global(.ui.input > input) {
+    color: var(--text);
+    background: #1b1b1b;
+    border-color: var(--border);
+  }
+
+  :global(.ui.selection.dropdown:hover),
+  :global(.ui.input > input:hover) {
+    border-color: #555;
+  }
+
+  :global(.ui.selection.active.dropdown),
+  :global(.ui.selection.active.dropdown .menu),
+  :global(.ui.selection.active.dropdown:hover),
+  :global(.ui.selection.active.dropdown:hover .menu),
+  :global(.ui.input > input:focus) {
+    border-color: #4a90d9;
+  }
+
+  :global(.ui.selection.dropdown > .text),
+  :global(.ui.search.dropdown > input.search),
+  :global(.ui.selection.dropdown > .dropdown.icon) {
+    color: var(--text);
+  }
+
+  :global(.ui.selection.visible.dropdown > .text:not(.default)),
+  :global(.ui.selection.active.dropdown > .text:not(.default)) {
+    color: var(--text) !important;
+  }
+
+  :global(.ui.search.selection.dropdown.active > .text:not(.default)) {
+    color: var(--muted-text) !important;
+  }
+
+  :global(.ui.search.dropdown > .text.filtered),
+  :global(.ui.input > input::placeholder) {
+    color: var(--muted-text);
+  }
+
+  :global(.ui.selection.dropdown .menu) {
+    background: #1b1b1b;
+  }
+
+  :global(.ui.selection.dropdown .menu > .item) {
+    color: var(--text);
+    border-top-color: #2f2f2f;
+  }
+
+  :global(.ui.selection.dropdown .menu > .item:hover),
+  :global(.ui.selection.dropdown .menu > .selected.item) {
+    color: var(--text);
+    background: #2c2c2c;
+  }
+
+  :global(.ui.selection.dropdown .menu > .active.item) {
+    color: #fff;
+  }
+
+  :global(.ui.dropdown .menu > .message) {
+    color: var(--muted-text);
+  }
+
+  :global(.ui.input.error > input) {
+    color: #ff9a9a;
+    background: rgb(219 40 40 / 12%);
+    border-color: rgb(219 40 40 / 55%);
+  }
+
+  :global(.ui.checkbox label),
+  :global(.ui.checkbox label:hover),
+  :global(.ui.toggle.checkbox input:focus ~ label),
+  :global(.ui.toggle.checkbox input:checked ~ label),
+  :global(.ui.toggle.checkbox input:focus:checked ~ label) {
+    color: var(--text) !important;
+  }
+
+  :global(.ui.toggle.checkbox label::before),
+  :global(.ui.toggle.checkbox input:focus ~ label::before) {
+    background: #444 !important;
+  }
+
+  :global(.ui.toggle.checkbox input:checked ~ label::before),
+  :global(.ui.toggle.checkbox input:checked:focus ~ label::before) {
+    background: #2185d0 !important;
+  }
+}

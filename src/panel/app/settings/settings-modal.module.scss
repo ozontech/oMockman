@@ -1,6 +1,7 @@
 .layout {
   display: flex;
-  min-height: 480px;
+  // A low panel (DevTools docked at the bottom) must not push the modal past the screen.
+  min-height: min(480px, 60vh);
   max-height: 70vh;
 }
 
@@ -153,4 +154,36 @@
 	margin-top: 4px;
 	font-size: 12px;
 	opacity: 0.7;
+}
+
+// A narrow panel (DevTools docked to the side): the sections go in a row above the content.
+@media (max-width: 600px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+    padding: 8px;
+  }
+
+  .navItem {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 7px 10px;
+  }
+
+  .content {
+    padding: 14px 12px;
+  }
+
+  .varKeyInput {
+    width: 110px;
+  }
 }

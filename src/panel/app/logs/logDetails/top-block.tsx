@@ -65,7 +65,7 @@ export const StickyTopBlock: React.FC<TopBlockProps> = ({
 							<Icon name={isDetached ? 'window restore' : 'external alternate'} />
 						</Button>
 					) : null}
-					<Button icon basic color="red" onClick={onClose} style={{ marginLeft: 0 }} size="mini">
+					<Button icon basic color="red" onClick={onClose} style={{ marginLeft: 0 }} size="mini" data-testid="log-details-close-button">
 						<Icon name="close" />
 					</Button>
 				</div>

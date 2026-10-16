@@ -12,6 +12,8 @@ export interface ILog {
 		/** The body was over MAX_BODY_BYTES and was not captured. */
 		bodyTooLarge?: boolean
 		bodySize?: number
+		/** The body the page sent, when a request patch replaced it; `body` is what went out. */
+		originalBody?: string
 		queryParams?: string
 		headers: Headers
 	}
@@ -21,20 +23,62 @@ export interface ILog {
 		headers: Headers
 		/** The body was over MAX_BODY_BYTES and was not captured. */
 		tooLarge?: boolean
+		/** The body is binary (a blob, an arraybuffer or a document) and was not captured. */
+		binary?: boolean
 		size?: number
 	}
 	mockResponse?: IMockResponse
 	id?: number | string
+	/** When the request was caught (its log written), ms since epoch. */
+	time?: number
 	isMocked?: boolean
+	/** The request went to the network, and Mockman changed its body or the response headers. */
+	isPatched?: boolean
+	/** Mock headers were set on the real response: the log shows them, not the network's. */
+	headersPatched?: boolean
+	/** The request went out with the mock's body instead of the page's. */
+	requestPatched?: boolean
+	/** Sent from the panel through the page, not by the page itself. */
+	sentByMockman?: boolean
+	/** The collection scenario rule that answered the request. */
+	scenario?: {
+		collectionName: string
+		/** Which call of the endpoint this was, counted from the scenario start. */
+		callNumber: number
+		/** The rule let the real request through instead of serving a mock. */
+		network: boolean
+	}
 
 	mockPath?: string
+}
+
+/**
+ * `replace` sends `body` as is. `merge` applies `body` to the page's JSON body as a JSON Merge
+ * Patch (RFC 7386): fields are set, `null` removes one, nested objects merge.
+ */
+export type RequestPatchMode = 'replace' | 'merge'
+
+export interface IRequestPatch {
+	mode: RequestPatchMode
+	body: string
+}
+
+/**
+ * What a mock changes. The request body goes with neither response part: a served response never
+ * reaches the network. Response headers alone are set on the real response.
+ */
+export interface IMockApply {
+	responseBody: boolean
+	responseHeaders: boolean
+	requestBody: boolean
 }
 
 export interface IMockResponse {
 	/** Draft only, never persisted: the source log's response was too large to capture. */
 	responseTooLargeBytes?: number
 	method: MethodEnum
-	createdOn: number
+	/** When the mock was made in the panel. Optional: an imported mock keeps what its file says, or none. */
+	createdOn?: number
 	url: string
 	openApiUrl?: string
 	status: number
@@ -47,6 +91,10 @@ export interface IMockResponse {
 	description: string
 	name?: string
 	collectionId?: string | null
+	/** Missing on mocks saved before it existed: see resolveMockApply. */
+	apply?: IMockApply
+	/** The body sent instead of the page's when `apply.requestBody` is on; kept as a draft when off. */
+	requestPatch?: IRequestPatch
 	action?: (req: {
 		body: Record<string, unknown>
 		params: Record<string, unknown>

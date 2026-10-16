@@ -10,9 +10,8 @@ import type { IMockResponse, IStore } from '@/interface/mock'
 import { genId } from '@/services/helper'
 
 export const useMockActions = () => {
-	const { store, setStoreProperties, setSelectedMock } = useChromeStore(
+	const { setStoreProperties, setSelectedMock } = useChromeStore(
 		useShallow((s) => ({
-			store: s.store,
 			setStoreProperties: s.setStoreProperties,
 			setSelectedMock: s.setSelectedMock,
 		})),
@@ -22,10 +21,8 @@ export const useMockActions = () => {
 
 	const toggleMock = useCallback(
 		(mockToUpdate: IMockResponse): void => {
-			const updatedStore = storeActions.updateMocks(store, mockToUpdate)
-
 			void persistStoreChange({
-				updatedStore,
+				updatedStore: () => storeActions.updateMocks(useChromeStore.getState().store, mockToUpdate),
 				setStoreProperties,
 				tabId: tab?.id,
 			})
@@ -38,15 +35,13 @@ export const useMockActions = () => {
 					toast.error(describeSaveError(error, t, t.toast_mockCannotToggle))
 				})
 		},
-		[store, setStoreProperties, tab?.id],
+		[setStoreProperties, tab?.id],
 	)
 
 	const deleteMock = useCallback(
 		(mock: IMockResponse): void => {
-			const updatedStore = storeActions.deleteMocks(store, mock.id)
-
 			void persistStoreChange({
-				updatedStore,
+				updatedStore: () => storeActions.deleteMocks(useChromeStore.getState().store, mock.id),
 				setStoreProperties,
 				tabId: tab?.id,
 			})
@@ -55,7 +50,7 @@ export const useMockActions = () => {
 					toast.error(describeSaveError(error, t, t.toast_mockCannotDelete))
 				})
 		},
-		[store, setStoreProperties, tab?.id],
+		[setStoreProperties, tab?.id],
 	)
 
 	const duplicateMock = useCallback((mock: IMockResponse): void => {
@@ -63,10 +58,10 @@ export const useMockActions = () => {
 			...mock,
 			id: genId(),
 			name: `${mock.name} (Copy)`,
+			createdOn: Date.now(),
 		}
-		const updatedStore = storeActions.addMocks(store, copy)
 		void persistStoreChange({
-			updatedStore,
+			updatedStore: () => storeActions.addMocks(useChromeStore.getState().store, copy),
 			setStoreProperties,
 			tabId: tab?.id,
 		})
@@ -77,11 +72,7 @@ export const useMockActions = () => {
 				const t = useGlobalStore.getState().t
 				toast.error(describeSaveError(error, t, t.toast_mockCannotDuplicate))
 			})
-	}, [store, setStoreProperties, tab?.id])
-
-	const refreshStore = useCallback((): void => {
-		storeActions.refreshContentStore(tab?.id)
-	}, [tab?.id])
+	}, [setStoreProperties, tab?.id])
 
 	const editMock = useCallback(
 		(mock: IMockResponse): void => {
@@ -90,7 +81,7 @@ export const useMockActions = () => {
 		[setSelectedMock],
 	)
 
-	return { toggleMock, deleteMock, duplicateMock, editMock, refreshStore }
+	return { toggleMock, deleteMock, duplicateMock, editMock }
 }
 
 export const useGlobalMocksToggle = () => {
@@ -104,9 +95,8 @@ export const useGlobalMocksToggle = () => {
 
 	const handleToggleAllMocks = useCallback(() => {
 		const nextActive = !store.active
-		const updatedStore = { ...store, active: nextActive }
 		void persistStoreChange({
-			updatedStore,
+			updatedStore: () => ({ ...useChromeStore.getState().store, active: nextActive }),
 			setStoreProperties,
 			tabId: tab?.id,
 			applyMocksNow: { enabled: nextActive },
@@ -143,10 +133,11 @@ export const useCollectionActions = () => {
 		return depth
 	}, [store.collectionTree.nodes])
 
+	// The change is applied to the store as it is when the write runs, not as this render saw it.
 	const persist = useCallback(
-		(updatedStore: IStore): Promise<void> =>
+		(change: (current: IStore) => IStore): Promise<void> =>
 			persistStoreChange({
-				updatedStore,
+				updatedStore: () => change(useChromeStore.getState().store),
 				setStoreProperties,
 				tabId: tab?.id,
 				applyMocksNow: false,
@@ -169,45 +160,40 @@ export const useCollectionActions = () => {
 				}
 			}
 			const name = 'New Collection'
-			const updatedStore = storeActions.createCollection(store, { name, parentId })
-			persist(updatedStore).then(() => {
+			persist((current) => storeActions.createCollection(current, { name, parentId })).then(() => {
 				toast.success(useGlobalStore.getState().t.toast_collectionCreated)
 			})
 		},
-		[getCollectionDepth, persist, store],
+		[getCollectionDepth, persist],
 	)
 
 	const moveEntry = useCallback(
 		(payload: CollectionMovePayload): void => {
-			const updatedStore = storeActions.applyCollectionMove(store, payload)
-			if (updatedStore === store) return
-			persist(updatedStore)
+			if (storeActions.applyCollectionMove(store, payload) === store) return
+			persist((current) => storeActions.applyCollectionMove(current, payload))
 		},
 		[persist, store],
 	)
 
 	const renameCollection = useCallback(
 		(collectionId: string, name: string): void => {
-			const updatedStore = storeActions.renameCollection(store, collectionId, name)
-			persist(updatedStore)
+			persist((current) => storeActions.renameCollection(current, collectionId, name))
 		},
-		[persist, store],
+		[persist],
 	)
 
 	const deleteCollection = useCallback(
 		(collectionId: string): void => {
-			const updatedStore = storeActions.deleteCollectionDeep(store, collectionId)
-			persist(updatedStore)
+			persist((current) => storeActions.deleteCollectionDeep(current, collectionId))
 		},
-		[persist, store],
+		[persist],
 	)
 
 	const toggleCollectionMocking = useCallback(
 		(collectionId: string, active: boolean): void => {
-			const updatedStore = storeActions.setCollectionBranchActive(store, collectionId, active)
-			persist(updatedStore)
+			persist((current) => storeActions.setCollectionBranchActive(current, collectionId, active))
 		},
-		[persist, store],
+		[persist],
 	)
 
 	return { createCollection, moveEntry, renameCollection, deleteCollection, toggleCollectionMocking }

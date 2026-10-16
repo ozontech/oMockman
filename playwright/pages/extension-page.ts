@@ -6,6 +6,25 @@ const BASE_URL = (extensionId: string) => {
 
 const CHROME_EXTENSION_ID = 'dbkpaefljpbnilbfokieiiliihgcjgipj'
 
+/**
+ * The panel shows when a log came and when a mock was made: with the real clock every screenshot
+ * would differ. Only `Date` stands still; timers and animations run as usual.
+ */
+export const FIXED_NOW = new Date('2026-01-15T10:30:00+03:00')
+
+function freezeDate(fixed: number): void {
+	const RealDate = Date
+	function FixedDate(this: unknown, ...args: unknown[]): Date | string {
+		if (!(this instanceof FixedDate)) return new RealDate(fixed).toString()
+		return args.length === 0 ? new RealDate(fixed) : new (RealDate as unknown as new (...a: unknown[]) => Date)(...args)
+	}
+	FixedDate.prototype = RealDate.prototype
+	FixedDate.now = () => fixed
+	FixedDate.parse = RealDate.parse
+	FixedDate.UTC = RealDate.UTC
+	;(globalThis as unknown as { Date: unknown }).Date = FixedDate
+}
+
 export class ExtensionPage {
 	constructor(
 		public page: Page,
@@ -14,6 +33,7 @@ export class ExtensionPage {
 
 	static async create(context: BrowserContext, extensionId?: string): Promise<ExtensionPage> {
 		const page = await context.newPage()
+		await page.addInitScript(freezeDate, FIXED_NOW.getTime())
 
 		await page.route('https://fonts.googleapis.com/**', async (route) => {
 			await route.fulfill({ status: 200, body: '' })

@@ -41,6 +41,8 @@ export interface OpenApiValidationState {
 	enumHints: OpenApiValidationEnumHint[]
 	suggestionsTruncated: boolean
 	responseSchema?: RecordLike
+	/** The body was too large to check: its length. The schema is still there for AI generation. */
+	bodyCheckSkipped?: number
 }
 
 export type RecordLike = Record<string, unknown>

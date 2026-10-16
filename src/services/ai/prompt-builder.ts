@@ -255,19 +255,7 @@ function buildSystemMessage(
 	lines.push('Generation rules (follow EACH one):')
 	lines.push(rules.map((rule, index) => `${index + 1}. ${rule}`).join('\n'))
 
-	const customPrompt = input.globalSystemPrompt?.trim()
-	if (customPrompt) {
-		lines.push('')
-		lines.push('Additional instructions:')
-		lines.push(customPrompt)
-	}
-
-	const collectionPrompt = input.collection?.aiPrompt?.trim()
-	if (collectionPrompt) {
-		lines.push('')
-		lines.push('Collection instructions:')
-		lines.push(collectionPrompt)
-	}
+	appendCustomPrompts(lines, input)
 
 	return { role: 'system', content: lines.join('\n') }
 }
@@ -321,10 +309,114 @@ function buildUserMessage(input: IBuildPromptInput, currentResponse: unknown, en
 	return { role: 'user', content: sections.join('\n') }
 }
 
+const REQUEST_ENRICH_ONLY_RULES = [
+	'You are given an existing JSON request body. Fill it with data WITHOUT changing the structure.',
+	'Keep every key name exactly as in the original — do not add new keys and do not remove existing ones.',
+	'Keep the type of every value: use the existing value as the type reference.',
+]
+
+const REQUEST_SCHEMA_ONLY_RULES = [
+	'Generate the request body strictly by the provided JSON Schema — every required field, correct types. Add optional fields where they make the request meaningful.',
+]
+
+const REQUEST_HYBRID_RULES = [
+	'You are given an existing JSON request body and a JSON Schema. Use the JSON values as a reference, but make them conform to the schema.',
+	'The schema is the source of truth: if a value type in the JSON contradicts the schema, fix the type to match the schema.',
+	'Take key names from the schema; use the existing values as a sample of the data style.',
+]
+
+const REQUEST_SHAPE_RULES = [
+	'This is ONE request body the client sends to the server (a command or a filter), not a list of records: do not multiply data.',
+	'Keep arrays short: 1-3 elements, or exactly what minItems/maxItems require.',
+	'Keep values consistent with each other: a date range where "from" is not after "to", a page number and page size that make sense, IDs that refer to the same entity.',
+]
+
+const REQUEST_HAPPY_RULES = [
+	'Generate a valid request body the server should accept, with plausible values (real IDs, barcodes, names, dates), not placeholders like "string" or 0.',
+	'For enum fields pick values from the allowed list.',
+]
+
+const REQUEST_CORNER_RULES = [
+	'Corner-case mode: the body stays VALID by the schema, but its values sit on the edges of what is allowed, to test how the server and the page handle them.',
+	'Use boundary values: the minimum and maximum of numbers (from the schema; with no limit given — 0 and a very large number), the shortest and longest strings minLength/maxLength allow (with no maxLength — a 300+ character string in ONE field only), empty arrays where minItems allows, boundary dates (end of month, leap year, distant past or future).',
+	'Put problematic but valid characters into free string fields: leading/trailing spaces, special characters, emoji, unicode.',
+	'Respect every schema constraint: type, format, enum, minimum/maximum, minLength/maxLength. Corner cases test the edges of what is valid, not invalid data.',
+]
+
+const REQUEST_ERROR_RULES = [
+	'Error mode: generate an INVALID request body the server must reject with a validation error (4xx), to test server-side validation and how the page shows it.',
+	'Break the schema in several distinct ways, each in its own field: leave out a required field, put a value of the wrong type, use a value outside the enum, go beyond minimum/maximum or maxLength, break a format (date, email, uuid).',
+	'Keep the JSON document itself valid and the rest of the body plausible, so the breakages are easy to spot.',
+]
+
+function pickRequestModeRules(mode: AIGenerationMode): string[] {
+	if (mode === 'corner') return REQUEST_CORNER_RULES
+	if (mode === 'error') return REQUEST_ERROR_RULES
+	return REQUEST_HAPPY_RULES
+}
+
+function pickRequestDataRules(hasJson: boolean, hasSchema: boolean): string[] {
+	if (hasJson && hasSchema) return REQUEST_HYBRID_RULES
+	if (hasJson) return REQUEST_ENRICH_ONLY_RULES
+	if (hasSchema) return REQUEST_SCHEMA_ONLY_RULES
+	return ['Generate a realistic JSON request body that fits the endpoint context.']
+}
+
+/** Global and collection prompts apply to the request body too. */
+function appendCustomPrompts(lines: string[], input: IBuildPromptInput): void {
+	const customPrompt = input.globalSystemPrompt?.trim()
+	if (customPrompt) lines.push('', 'Additional instructions:', customPrompt)
+	const collectionPrompt = input.collection?.aiPrompt?.trim()
+	if (collectionPrompt) lines.push('', 'Collection instructions:', collectionPrompt)
+}
+
+function buildRequestBodyMessages(input: IBuildPromptInput): IAIMessage[] {
+	const currentBody = tryParseJson(input.mock.requestPatch?.body)
+	const hasJson = currentBody !== undefined
+	const hasSchema = Boolean(input.openApiOperation)
+	const mode: AIGenerationMode = input.mode ?? 'happy'
+
+	const rules = [
+		...pickRequestDataRules(hasJson, hasSchema),
+		...REQUEST_SHAPE_RULES,
+		...pickRequestModeRules(mode),
+		JSON_OUTPUT_RULE,
+		...(input.compactRetry ? [COMPACT_RETRY_RULE] : []),
+	]
+	const system = ['Generation rules (follow EACH one):', rules.map((rule, index) => `${index + 1}. ${rule}`).join('\n')]
+	appendCustomPrompts(system, input)
+
+	const method = String(input.mock.method ?? '').toUpperCase() || 'POST'
+	const user: string[] = [`Target endpoint: ${method} ${input.mock.url ?? ''} — the request body the client sends`]
+	const mockName = input.mock.name?.trim()
+	if (mockName) user.push(`Mock name: ${mockName}`)
+	const mockDescription = input.mock.description?.trim()
+	if (mockDescription) user.push(`Mock description: ${mockDescription}`)
+
+	if (hasJson) {
+		user.push('', 'Existing JSON request body:', '```json', truncate(JSON.stringify(currentBody, null, 2), MAX_OPENAPI_FRAGMENT_CHARS), '```')
+	}
+	if (input.openApiOperation) {
+		const enumCatalog = buildEnumCatalog(input.openApiOperation)
+		if (enumCatalog) user.push('', 'Allowed enum values:', enumCatalog)
+		const fragment = stringifyOperation(input.openApiOperation)
+		if (fragment) {
+			user.push('', 'Request body JSON Schema from OpenAPI (source of truth for keys, types and enum):', '```json', fragment, '```')
+		}
+	}
+	user.push('', 'Answer with a single valid JSON document: the request body, by the rules above.')
+
+	return [
+		{ role: 'system', content: system.join('\n') },
+		{ role: 'user', content: user.join('\n') },
+	]
+}
+
 /**
  * Builds the prompt for mock generation.
  */
 export function buildMockGenerationMessages(input: IBuildPromptInput): IAIMessage[] {
+	if (input.target === 'request') return buildRequestBodyMessages(input)
 	const currentResponse = tryParseJson(input.mock.response)
 	const hasJson = currentResponse !== undefined
 	const hasSchema = Boolean(input.openApiOperation)

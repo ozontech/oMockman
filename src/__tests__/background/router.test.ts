@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import type * as ActualModule from '@/services/ai'
 
@@ -42,6 +43,9 @@ const getHeaders = vi.fn((): Array<typeof HEADER_ROW> => [HEADER_ROW])
 const clearHeaders = vi.fn()
 const getStoredAIProvider = vi.fn()
 const getSecuritySettings = vi.fn()
+const getProviderKey = vi.fn()
+const setProviderKey = vi.fn()
+const deleteProviderKey = vi.fn()
 
 vi.mock('@/services/ai', async (importOriginal) => {
 	const actual = await importOriginal<typeof ActualModule>()
@@ -55,7 +59,14 @@ vi.mock('@/background/openapi-fetch', () => ({
 vi.mock('@/background/headers-store', () => ({
 	setHeaders: (...args: unknown[]) => setHeaders(...args),
 	getHeaders: () => getHeaders(),
-	clearHeaders: () => clearHeaders(),
+	clearHeaders: (...args: unknown[]) => clearHeaders(...args),
+}))
+
+vi.mock('@/background/secrets', () => ({
+	getProviderKey: (...args: unknown[]) => getProviderKey(...args),
+	setProviderKey: (...args: unknown[]) => setProviderKey(...args),
+	deleteProviderKey: (...args: unknown[]) => deleteProviderKey(...args),
+	migrateLegacyKeys: () => Promise.resolve(),
 }))
 
 vi.mock('@/background/store-access', () => ({
@@ -108,10 +119,14 @@ describe('background router', () => {
 		getSecuritySettings.mockResolvedValue({ allowLocalOpenApi: false })
 		fetchOpenApiSpec.mockResolvedValue({ ok: true, sourceUrl: 'https://x/openapi.json', spec: {} })
 		chatCompletion.mockResolvedValue({ ok: true, content: '{}', model: 'm' })
+		getProviderKey.mockResolvedValue({ ok: true, key: 'sk-stored' })
+		setProviderKey.mockResolvedValue({ ok: true, mask: 'sk-…ored' })
+		deleteProviderKey.mockResolvedValue(undefined)
 
 		vi.stubGlobal('chrome', {
 			runtime: {
 				id: 'test-extension-id',
+				getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
 				onConnect: { addListener: (cb: Listener) => connectListeners.push(cb) },
 				onMessage: { addListener: (cb: Listener) => messageRouters.push(cb) },
 				lastError: undefined,
@@ -170,7 +185,6 @@ describe('background router', () => {
 		getStoredAIProvider.mockResolvedValue({
 			id: 'p-1',
 			baseURL: 'https://llm.example.com/api',
-			apiKey: 'sk-stored',
 			model: 'm',
 		})
 
@@ -182,7 +196,79 @@ describe('background router', () => {
 
 		expect(handled).toBe(true)
 		expect(getStoredAIProvider).toHaveBeenCalledWith('p-1')
+		expect(getProviderKey).toHaveBeenCalledWith('p-1', 'https://llm.example.com/api')
 		expect(chatCompletion.mock.calls[0][0]).toMatchObject({ apiKey: 'sk-stored' })
+	})
+
+	it('does not send a key bound to another origin', async () => {
+		getStoredAIProvider.mockResolvedValue({ id: 'p-1', baseURL: 'https://evil.example.com', model: 'm' })
+		getProviderKey.mockResolvedValue({ ok: false, reason: 'origin_mismatch', origin: 'https://llm.example.com' })
+		let response: unknown
+		messageRouters.forEach((router) => router(
+			{ type: 'AI_CHAT', providerId: 'p-1', messages: [{ role: 'user', content: 'hi' }] },
+			EXTENSION_SENDER,
+			(value: unknown) => {
+				response = value
+			},
+		))
+
+		await vi.waitFor(() => expect(response).toBeDefined())
+		expect(response).toMatchObject({ ok: false, error: { code: 'provider_misconfigured' } })
+		expect(chatCompletion).not.toHaveBeenCalled()
+	})
+
+	it('tests a connection with the saved key only for its own origin', async () => {
+		getProviderKey.mockResolvedValue({ ok: false, reason: 'origin_mismatch', origin: 'https://llm.example.com' })
+		let response: unknown
+		messageRouters.forEach((router) => router(
+			{
+				type: 'AI_TEST_CONNECTION',
+				providerId: 'p-1',
+				// A key smuggled into the provider is ignored.
+				provider: { id: 'p-1', baseURL: 'https://evil.example.com', model: 'm', apiKey: 'sk-smuggled' },
+			},
+			EXTENSION_SENDER,
+			(value: unknown) => {
+				response = value
+			},
+		))
+
+		await vi.waitFor(() => expect(response).toBeDefined())
+		expect(getProviderKey).toHaveBeenCalledWith('p-1', 'https://evil.example.com')
+		expect(chatCompletion).not.toHaveBeenCalled()
+	})
+
+	it('tests a connection with a key typed into the form', async () => {
+		sendMessage(
+			{ type: 'AI_TEST_CONNECTION', apiKey: ' sk-typed ', provider: { id: 'probe', baseURL: 'https://llm.example.com', model: 'm' } },
+			EXTENSION_SENDER,
+		)
+		await vi.waitFor(() => expect(chatCompletion).toHaveBeenCalled())
+
+		expect(getProviderKey).not.toHaveBeenCalled()
+		expect(chatCompletion.mock.calls[0][0]).toMatchObject({ apiKey: 'sk-typed', baseURL: 'https://llm.example.com' })
+	})
+
+	it('saves a key from the panel and answers with its mask only', async () => {
+		let response: unknown
+		messageRouters.forEach((router) => router(
+			{ type: 'AI_SET_KEY', providerId: 'p-1', apiKey: 'sk-secret-value', baseURL: 'https://llm.example.com' },
+			EXTENSION_SENDER,
+			(value: unknown) => {
+				response = value
+			},
+		))
+
+		await vi.waitFor(() => expect(response).toBeDefined())
+		expect(setProviderKey).toHaveBeenCalledWith('p-1', 'sk-secret-value', 'https://llm.example.com')
+		expect(response).toEqual({ ok: true, mask: 'sk-…ored' })
+	})
+
+	it('refuses key changes from a content script', () => {
+		expect(sendMessage({ type: 'AI_SET_KEY', providerId: 'p-1', apiKey: 'k', baseURL: 'https://evil.example.com' }, CONTENT_SENDER).handled).toBe(false)
+		expect(sendMessage({ type: 'AI_DELETE_KEY', providerId: 'p-1' }, CONTENT_SENDER).handled).toBe(false)
+		expect(setProviderKey).not.toHaveBeenCalled()
+		expect(deleteProviderKey).not.toHaveBeenCalled()
 	})
 
 	it('refuses an AI request naming a provider that is not stored', async () => {
@@ -218,6 +304,40 @@ describe('background router', () => {
 		expect(tab.response).toEqual({ tab: { id: 5 } })
 	})
 
+	it('relays a panel message to the tab and hands back the answer', () => {
+		;(chrome.tabs.sendMessage as Mock).mockImplementation(
+			(_tabId: number, _message: unknown, _options: unknown, cb: (value: unknown) => void) => cb({ ok: true }),
+		)
+
+		const { handled, response } = sendMessage(
+			{ type: 'PANEL_SEND_TO_TAB', tabId: 7, message: { type: 'MOCKMAN_SEND_REQUEST' } },
+			EXTENSION_SENDER,
+		)
+
+		expect(handled).toBe(true)
+		expect(response).toEqual({ ok: true, value: { ok: true } })
+		expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, { type: 'MOCKMAN_SEND_REQUEST' }, { frameId: 0 }, expect.any(Function))
+	})
+
+	it('relays a closed tab as an error, not an exception', () => {
+		;(chrome.tabs.sendMessage as Mock).mockImplementation(
+			(_tabId: number, _message: unknown, _options: unknown, cb: (value: unknown) => void) => {
+				;(chrome.runtime as { lastError?: { message: string } }).lastError = { message: 'No tab with id: 7' }
+				cb(undefined)
+				;(chrome.runtime as { lastError?: { message: string } }).lastError = undefined
+			},
+		)
+
+		const { response } = sendMessage({ type: 'PANEL_SEND_TO_TAB', tabId: 7, message: { type: 'X' } }, EXTENSION_SENDER)
+
+		expect(response).toEqual({ ok: false, error: 'No tab with id: 7' })
+	})
+
+	it('refuses to relay for a content script', () => {
+		expect(sendMessage({ type: 'PANEL_SEND_TO_TAB', tabId: 1, message: { type: 'X' } }, CONTENT_SENDER).handled).toBe(false)
+		expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+	})
+
 	it('ignores messages without a type', () => {
 		expect(sendMessage({ nope: true }, EXTENSION_SENDER).handled).toBe(false)
 		expect(sendMessage('string', EXTENSION_SENDER).handled).toBe(false)
@@ -239,7 +359,7 @@ describe('background router', () => {
 		const details = { tabId: 42, method: 'GET', url: 'https://example.com/api', type: 'xmlhttprequest', responseHeaders: [] }
 		webRequestResponseStarted.forEach((cb) => cb(details))
 
-		expect(setHeaders).toHaveBeenCalledWith('GET', 'https://example.com/api', [])
+		expect(setHeaders).toHaveBeenCalledWith(42, 'GET', 'https://example.com/api', [])
 	})
 
 	it('stops capturing when the panel turns logging off', () => {
@@ -261,7 +381,7 @@ describe('background router', () => {
 		panel.onMessage.fire({ type: 'REGISTER_PANEL', tabId: 42 })
 		panel.onDisconnect.fire()
 
-		expect(clearHeaders).toHaveBeenCalled()
+		expect(clearHeaders).toHaveBeenCalledWith(42)
 	})
 
 	it('never captures main frame navigations', () => {

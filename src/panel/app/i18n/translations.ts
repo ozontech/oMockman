@@ -1,6 +1,35 @@
 export type Lang = 'en' | 'ru'
 
 export interface Translations {
+	col_settingsTitle: string
+	col_save: string
+	sc_enabled: string
+	sc_hint: string
+	sc_colRequest: string
+	sc_colCall: string
+	sc_colRespond: string
+	sc_network: string
+	sc_callHint: string
+	sc_requestHint: string
+	sc_respondHint: string
+	sc_addRule: string
+	sc_customEndpoint: string
+	sc_noRules: string
+	sc_reset: string
+	sc_resetTitle: string
+	sc_resetDone: string
+	sc_resetFailed: string
+	sc_moveUp: string
+	sc_moveDown: string
+	sc_deleteRule: string
+	sc_mockOff: string
+	sc_badgeTitle: string
+	sc_badge: string
+	log_scenario: (collection: string, call: number, network: boolean) => string
+	/** For dates and times in tables. */
+	dateLocale: string
+	logs_colTime: string
+	mocks_colCreated: string
 	// Header buttons
 	docsTitle: string
 	settingsTitle: string
@@ -91,6 +120,7 @@ export interface Translations {
 	field_serverUrl_hint: string
 	field_apiKey: string
 	field_apiKey_hint: string
+	field_apiKey_rebind: string
 	field_model: string
 	field_model_placeholder: string
 	field_model_hint: string
@@ -123,9 +153,9 @@ export interface Translations {
 	test_fail: string
 
 	// API key field
-	apiKey_show: string
-	apiKey_hide: string
 	apiKey_placeholder: string
+	apiKey_keepPlaceholder: (mask: string) => string
+	toast_keySaveFailed: (reason: string) => string
 
 	// Setup hint
 	setupHint_getKey: string
@@ -188,7 +218,7 @@ export interface Translations {
 	col_addOptions: string
 	col_addMock: string
 	col_addSub: string
-	col_editOpenApi: string
+	col_settings: string
 	col_export: (name: string) => string
 	col_delete: (name: string) => string
 	col_deleteTitle: string
@@ -216,6 +246,7 @@ export interface Translations {
 	mock_fieldOpenApi: string
 	mock_openApiPlaceholder: string
 	mock_openApiPartial: string
+	mock_openApiTooLarge: (size: string, limit: string) => string
 	mock_statusLabel: string
 	mock_statusActive: string
 	mock_statusInactive: string
@@ -251,6 +282,15 @@ export interface Translations {
 	// Add mock panes (tabs/buttons inside modal)
 	pane_tabResponse: string
 	pane_tabHeaders: string
+	pane_tabRequestBody: string
+	pane_requestPatchInvalidJson: string
+	pane_requestPatchNotObject: string
+	pane_requestPatchTooLarge: string
+	pane_requestPatchNoBodyMethod: string
+	pane_switchTitle: string
+	pane_applyNothing: string
+	pane_statusFromServer: string
+	pane_requestBodyPlaceholder: string
 	pane_responseLabel: string
 	pane_responseTooLarge: (size: string, limit: string) => string
 	pane_responseNotCaptured: (size: string, limit: string) => string
@@ -281,12 +321,40 @@ export interface Translations {
 	ai_mode_corner_desc: string
 	ai_mode_error: string
 	ai_mode_error_desc: string
+	ai_mode_happy_req_desc: string
+	ai_mode_corner_req_desc: string
+	ai_mode_error_req_desc: string
 	ai_phrase_generating: string[]
 	ai_phrase_retrying: string[]
 
 	// Logs
 	log_mockedCall: string
 	log_networkCall: string
+	log_patchedCall: string
+	log_mockedHeaders: string
+	send_title: string
+	send_button: string
+	send_shortcut: string
+	send_credentials: string
+	send_credentialsHint: string
+	send_body: string
+	send_headers: string
+	send_response: string
+	send_sending: string
+	send_headersMissing: string
+	send_headersFromSite: (host: string) => string
+	send_noBodyMethod: string
+	send_binaryBody: string
+	send_tooLargeBody: string
+	send_noTab: string
+	send_error_invalid: string
+	send_error_notAllowed: string
+	send_error_unavailable: string
+	send_error_network: string
+	send_error_timeout: string
+	log_sentCall: string
+	log_replay: string
+	pane_sendNow: string
 	log_noLogs: string
 	log_noLogsHint: string
 	log_noSearch: string
@@ -307,6 +375,12 @@ export interface Translations {
 	logDetail_tabRequestBody: string
 	logDetail_tabQueryParams: string
 	logDetail_tabHeaders: string
+	logDetail_largeBody: (size: string, lines: string) => string
+	logDetail_copy: string
+	logDetail_copied: string
+	logDetail_download: string
+	logDetail_sentBody: string
+	logDetail_originalBody: string
 	logDetail_responseHeaders: string
 	logDetail_requestHeaders: string
 	logDetail_noHeaders: string
@@ -314,10 +388,40 @@ export interface Translations {
 	logDetail_nothingToPreview: string
 	logDetail_bodyTooLargeTitle: string
 	logDetail_bodyTooLarge: (size: string, limit: string) => string
+	logDetail_binaryTitle: string
+	logDetail_binary: (size: string) => string
 	logDetail_close: string
 }
 
 export const en: Translations = {
+	col_settingsTitle: 'Collection settings',
+	col_save: 'Save',
+	sc_enabled: 'Use a scenario',
+	sc_hint: 'Rows of one endpoint answer in turn: the first row answers its first call, the next one the second, and the last row every later call. Reloading the page starts the count over.',
+	sc_colRequest: 'Request',
+	sc_colCall: 'Call',
+	sc_colRespond: 'Answer',
+	sc_network: 'From the server',
+	sc_callHint: 'Which call of the endpoint the row answers. The last row also answers every later call',
+	sc_requestHint: 'Which request of the page the rule catches',
+	sc_respondHint: 'What to answer with: a mock (even one that is off in the table) or the server response',
+	sc_addRule: 'Rule',
+	sc_customEndpoint: 'Add: ',
+	sc_noRules: 'No rules yet. Add a row per call of an endpoint: the first row answers its first call, the last one repeats.',
+	sc_reset: 'Start over',
+	sc_resetTitle: 'Start the call count over',
+	sc_resetDone: 'The call count starts over',
+	sc_resetFailed: 'Could not start the call count over',
+	sc_moveUp: 'Up',
+	sc_moveDown: 'Down',
+	sc_deleteRule: 'Delete the rule',
+	sc_mockOff: 'off',
+	sc_badgeTitle: 'The collection scenario is on. Click to start the call count over',
+	sc_badge: 'Scenario',
+	log_scenario: (collection, call, network) => `Scenario “${collection}”, call ${call}: ${network ? 'server response' : 'mocked'}`,
+	dateLocale: 'en-GB',
+	logs_colTime: 'Time',
+	mocks_colCreated: 'Created',
 	docsTitle: 'Documentation',
 	settingsTitle: 'Settings',
 
@@ -398,7 +502,8 @@ export const en: Translations = {
 	field_serverUrl_placeholder: 'https://api.openai.com/v1',
 	field_serverUrl_hint: 'The OpenAI-compatible API base. Requests go to /chat/completions under it.',
 	field_apiKey: 'API key',
-	field_apiKey_hint: 'Stored locally in this browser only. Never included in exported presets.',
+	field_apiKey_hint: 'Kept by the extension apart from your mocks: the panel only ever shows a mask of it. Sent only to the server it was entered for, never exported.',
+	field_apiKey_rebind: 'The server URL now points to another host, so the saved key does not apply to it. Enter the key for this server.',
 	field_model: 'Model',
 	field_model_placeholder: 'e.g. gpt-4o-mini',
 	field_model_hint: 'The model name your server expects.',
@@ -429,9 +534,9 @@ export const en: Translations = {
 	test_ok: (ms, model) => `Connected · ${ms} ms · ${model}`,
 	test_fail: 'Connection failed',
 
-	apiKey_show: 'Show',
-	apiKey_hide: 'Hide',
 	apiKey_placeholder: 'sk-…',
+	apiKey_keepPlaceholder: (mask) => `Saved: ${mask}. Leave empty to keep it`,
+	toast_keySaveFailed: (reason) => `Could not save the API key: ${reason}`,
 
 	setupHint_getKey: 'How to get a key',
 	setupHint_copy: 'Copy',
@@ -488,7 +593,7 @@ export const en: Translations = {
 	col_addOptions: 'Add options',
 	col_addMock: 'Add Mock',
 	col_addSub: 'Add Subcollection',
-	col_editOpenApi: 'Edit collection OpenAPI URL',
+	col_settings: 'Collection settings',
 	col_export: (name) => `Export mocks in ${name}`,
 	col_delete: (name) => `Delete collection ${name}`,
 	col_deleteTitle: 'Delete collection?',
@@ -508,12 +613,13 @@ export const en: Translations = {
 	mock_openWindow: 'Open in separate window',
 	mock_close: 'Close',
 	mock_fieldName: 'Name',
-	mock_namePlaceholder: 'Goals Success',
+	mock_namePlaceholder: 'Empty task list',
 	mock_fieldDesc: 'Description',
-	mock_descPlaceholder: 'Success case for goals API',
+	mock_descPlaceholder: 'No tasks for today, to check the empty screen',
 	mock_fieldOpenApi: 'OpenAPI / Swagger URL',
 	mock_openApiPlaceholder: 'https://api.example.com/swagger.json',
 	mock_openApiPartial: 'Suggestions are partially loaded for a large schema.',
+	mock_openApiTooLarge: (size, limit) => `The body is ${size}, over ${limit}: it is not checked against the schema, so the form stays fast. AI generation still uses the schema.`,
 	mock_statusLabel: 'Status',
 	mock_statusActive: 'Active',
 	mock_statusInactive: 'Inactive',
@@ -547,6 +653,15 @@ export const en: Translations = {
 
 	pane_tabResponse: 'Response Body',
 	pane_tabHeaders: 'Response Headers',
+	pane_tabRequestBody: 'Request Body',
+	pane_requestPatchInvalidJson: 'The body is not valid JSON.',
+	pane_requestPatchNotObject: 'Merge needs a JSON object: { ... }.',
+	pane_requestPatchTooLarge: 'The body is over the size limit.',
+	pane_requestPatchNoBodyMethod: 'The browser sends no body with GET and HEAD, so the patch does not apply to them.',
+	pane_switchTitle: 'Turn on or off',
+	pane_applyNothing: 'Turn on at least one: response body, response headers or request body.',
+	pane_statusFromServer: 'The status comes from the server',
+	pane_requestBodyPlaceholder: 'The body sent to the server',
 	pane_responseLabel: 'Response (JSON)',
 	pane_responseTooLarge: (size, limit) => `Response is too large: ${size}, the limit is ${limit}. A mock this big cannot be saved.`,
 	pane_responseNotCaptured: (size, limit) => (size
@@ -563,7 +678,7 @@ export const en: Translations = {
 	pane_headerValuePlaceholder: 'Value',
 	pane_deleteHeader: 'Delete header',
 
-	ai_gate_setup: 'Set up an AI connection (gear icon in the top bar)',
+	ai_gate_setup: 'Connect an AI first: Settings (gear icon in the top bar) → AI connections',
 	ai_gate_pick: 'Pick an AI connection (gear icon in the top bar)',
 	ai_gate_addKey: (name) => `Add an API key for "${name}" (gear icon in the top bar)`,
 	ai_gate_generate: (name) => `Generate with ${name}`,
@@ -578,11 +693,39 @@ export const en: Translations = {
 	ai_mode_corner_desc: 'Edge cases: empty, long, special chars',
 	ai_mode_error: 'Error',
 	ai_mode_error_desc: 'Error response per schema',
+	ai_mode_happy_req_desc: 'Valid body the server accepts',
+	ai_mode_corner_req_desc: 'Edge values the schema still allows',
+	ai_mode_error_req_desc: 'Invalid body to test server validation',
 	ai_phrase_generating: ['Generating…', 'Filling…', 'Expanding…', 'Crafting…', 'Assembling…'],
 	ai_phrase_retrying: ['Optimizing…', 'Trimming…', 'Compacting…', 'Shrinking…'],
 
-	log_mockedCall: 'Mocked call',
+	log_mockedCall: 'Mocked Response',
 	log_networkCall: 'Network call',
+	log_patchedCall: 'Mocked Request',
+	log_mockedHeaders: 'Mocked Response headers',
+	send_title: 'Send request',
+	send_button: 'Send',
+	send_shortcut: 'Ctrl/⌘ + Enter',
+	send_credentials: 'Send the site cookies',
+	send_credentialsHint: 'credentials: include. Turn off for an API that does not allow credentials in CORS.',
+	send_body: 'Body',
+	send_headers: 'Headers',
+	send_response: 'Response',
+	send_sending: 'Sending…',
+	send_headersMissing: 'Logs have no calls to this site, so no headers (Authorization among them) were filled in. Reload the site with the panel open, or add the headers on the Headers tab.',
+	send_headersFromSite: (host) => `Headers taken from the latest call to ${host}: Logs have no call to this endpoint.`,
+	send_noBodyMethod: 'GET and HEAD requests carry no body.',
+	send_binaryBody: 'Binary body, not shown.',
+	send_tooLargeBody: 'The body is over the size limit, not shown.',
+	send_noTab: 'The panel is not attached to a tab.',
+	send_error_invalid: 'The URL is not valid',
+	send_error_notAllowed: 'Mockman is not allowed on this site: allow it in Settings → Sites',
+	send_error_unavailable: 'No connection to the page: open or reload the site tab',
+	send_error_network: 'The request did not get through: network, CORS or the browser blocked it. Try without cookies.',
+	send_error_timeout: 'No answer in 60 seconds',
+	log_sentCall: 'Sent from Mockman',
+	log_replay: 'Send again',
+	pane_sendNow: 'Send now',
 	log_noLogs: 'No network calls yet!',
 	log_noLogsHint: 'XHR / fetch requests will appear here.',
 	log_noSearch: 'No matched log',
@@ -602,11 +745,21 @@ export const en: Translations = {
 	logDetail_tabRequestBody: 'Request Body',
 	logDetail_tabQueryParams: 'Query Params',
 	logDetail_tabHeaders: 'Headers',
+	logDetail_largeBody: (size, lines) => `Large body: ${size}, ${lines} lines. It scrolls inside the editor; line wrapping and error highlighting are off.`,
+	logDetail_copy: 'Copy',
+	logDetail_copied: 'Body copied',
+	logDetail_download: 'Download',
+	logDetail_sentBody: 'Sent body (patched by Mockman)',
+	logDetail_originalBody: 'Original body from the page',
 	logDetail_responseHeaders: 'Response Headers',
 	logDetail_requestHeaders: 'Request Headers',
 	logDetail_noHeaders: 'No headers',
 	logDetail_pending: 'Request pending',
 	logDetail_nothingToPreview: 'Nothing to preview',
+	logDetail_binaryTitle: 'Binary response',
+	logDetail_binary: (size) => (size
+		? `A file or binary data, ${size}. Its body is not captured.`
+		: 'A file or binary data. Its body is not captured.'),
 	logDetail_bodyTooLargeTitle: 'Body is too large',
 	logDetail_bodyTooLarge: (size, limit) => (size
 		? `The body is ${size}, larger than ${limit}, so it was not captured.`
@@ -615,6 +768,34 @@ export const en: Translations = {
 }
 
 export const ru: Translations = {
+	col_settingsTitle: 'Настройки коллекции',
+	col_save: 'Сохранить',
+	sc_enabled: 'Включить сценарий',
+	sc_hint: 'Строки одной ручки отвечают по очереди: первая — на её первый вызов, следующая — на второй, последняя — на все дальнейшие. После перезагрузки страницы счёт начинается заново.',
+	sc_colRequest: 'Запрос',
+	sc_colCall: 'Вызов',
+	sc_colRespond: 'Ответ',
+	sc_network: 'От сервера',
+	sc_callHint: 'На какой по счёту вызов ручки отвечает строка. Последняя строка отвечает и на все следующие вызовы',
+	sc_requestHint: 'Какой запрос страницы ловит правило',
+	sc_respondHint: 'Чем ответить: моком (даже если он выключен в таблице) или ответом от сервера',
+	sc_addRule: 'Правило',
+	sc_customEndpoint: 'Добавить: ',
+	sc_noRules: 'Правил пока нет. Добавьте строку на каждый вызов ручки: первая ответит на её первый вызов, последняя будет повторяться.',
+	sc_reset: 'Сбросить',
+	sc_resetTitle: 'Начать счёт вызовов заново',
+	sc_resetDone: 'Счёт вызовов начат заново',
+	sc_resetFailed: 'Не получилось начать счёт вызовов заново',
+	sc_moveUp: 'Выше',
+	sc_moveDown: 'Ниже',
+	sc_deleteRule: 'Удалить правило',
+	sc_mockOff: 'выключен',
+	sc_badgeTitle: 'Сценарий коллекции включён. Нажмите, чтобы начать счёт вызовов заново',
+	sc_badge: 'Сценарий',
+	log_scenario: (collection, call, network) => `Сценарий «${collection}», вызов ${call}: ${network ? 'ответ от сервера' : 'ответ из мока'}`,
+	dateLocale: 'ru-RU',
+	logs_colTime: 'Время',
+	mocks_colCreated: 'Создан',
 	docsTitle: 'Документация',
 	settingsTitle: 'Настройки',
 
@@ -695,7 +876,8 @@ export const ru: Translations = {
 	field_serverUrl_placeholder: 'https://api.openai.com/v1',
 	field_serverUrl_hint: 'Базовый URL OpenAI-совместимого API. Запросы идут на /chat/completions.',
 	field_apiKey: 'API-ключ',
-	field_apiKey_hint: 'Хранится локально в браузере. Никогда не включается в экспортируемые пресеты.',
+	field_apiKey_hint: 'Хранится расширением отдельно от моков, в панели виден только по маске. Уходит только на сервер, для которого введён, и никогда не экспортируется.',
+	field_apiKey_rebind: 'Адрес сервера теперь ведёт на другой хост, сохранённый ключ к нему не подходит. Введите ключ для этого сервера.',
 	field_model: 'Модель',
 	field_model_placeholder: 'Например: gpt-4o-mini',
 	field_model_hint: 'Название модели, которую ожидает ваш сервер.',
@@ -726,9 +908,9 @@ export const ru: Translations = {
 	test_ok: (ms, model) => `Подключено · ${ms} мс · ${model}`,
 	test_fail: 'Ошибка подключения',
 
-	apiKey_show: 'Показать',
-	apiKey_hide: 'Скрыть',
 	apiKey_placeholder: 'sk-…',
+	apiKey_keepPlaceholder: (mask) => `Сохранён: ${mask}. Оставьте пустым, чтобы не менять`,
+	toast_keySaveFailed: (reason) => `Не удалось сохранить API-ключ: ${reason}`,
 
 	setupHint_getKey: 'Как получить ключ',
 	setupHint_copy: 'Копировать',
@@ -785,7 +967,7 @@ export const ru: Translations = {
 	col_addOptions: 'Действия',
 	col_addMock: 'Добавить мок',
 	col_addSub: 'Добавить подколлекцию',
-	col_editOpenApi: 'Редактировать OpenAPI URL коллекции',
+	col_settings: 'Настройки коллекции',
 	col_export: (name) => `Экспортировать моки из ${name}`,
 	col_delete: (name) => `Удалить коллекцию ${name}`,
 	col_deleteTitle: 'Удалить коллекцию?',
@@ -805,12 +987,13 @@ export const ru: Translations = {
 	mock_openWindow: 'Открыть в отдельном окне',
 	mock_close: 'Закрыть',
 	mock_fieldName: 'Название',
-	mock_namePlaceholder: 'Получение целей',
+	mock_namePlaceholder: 'Пустой список заданий',
 	mock_fieldDesc: 'Описание',
-	mock_descPlaceholder: 'Успешный ответ API целей',
+	mock_descPlaceholder: 'Заданий на сегодня нет — проверяем пустой экран',
 	mock_fieldOpenApi: 'OpenAPI / Swagger URL',
 	mock_openApiPlaceholder: 'https://api.example.com/swagger.json',
 	mock_openApiPartial: 'Подсказки загружены частично — схема очень большая.',
+	mock_openApiTooLarge: (size, limit) => `Тело ${size}, больше ${limit}: по схеме не проверяется, чтобы форма не тормозила. AI-генерация схему по-прежнему использует.`,
 	mock_statusLabel: 'Статус',
 	mock_statusActive: 'Активен',
 	mock_statusInactive: 'Неактивен',
@@ -844,6 +1027,15 @@ export const ru: Translations = {
 
 	pane_tabResponse: 'Тело ответа',
 	pane_tabHeaders: 'Заголовки ответа',
+	pane_tabRequestBody: 'Тело запроса',
+	pane_requestPatchInvalidJson: 'Тело — невалидный JSON.',
+	pane_requestPatchNotObject: 'Для слияния нужен JSON-объект: { ... }.',
+	pane_requestPatchTooLarge: 'Тело больше допустимого размера.',
+	pane_requestPatchNoBodyMethod: 'Браузер не отправляет тело у GET и HEAD, поэтому подмена к ним не применяется.',
+	pane_switchTitle: 'Включить или выключить',
+	pane_applyNothing: 'Включите хотя бы одно: тело ответа, заголовки ответа или тело запроса.',
+	pane_statusFromServer: 'Статус придёт от сервера',
+	pane_requestBodyPlaceholder: 'Тело, которое уйдёт на сервер',
 	pane_responseLabel: 'Ответ (JSON)',
 	pane_responseTooLarge: (size, limit) => `Ответ слишком большой: ${size}, лимит ${limit}. Такой мок нельзя сохранить.`,
 	pane_responseNotCaptured: (size, limit) => (size
@@ -860,7 +1052,7 @@ export const ru: Translations = {
 	pane_headerValuePlaceholder: 'Значение',
 	pane_deleteHeader: 'Удалить заголовок',
 
-	ai_gate_setup: 'Настройте AI-подключение (шестерёнка в верхней панели)',
+	ai_gate_setup: 'Сначала подключите AI: Настройки (шестерёнка в верхней панели) → AI-подключения',
 	ai_gate_pick: 'Выберите AI-подключение (шестерёнка в верхней панели)',
 	ai_gate_addKey: (name) => `Добавьте API-ключ для «${name}» (шестерёнка в верхней панели)`,
 	ai_gate_generate: (name) => `Сгенерировать через ${name}`,
@@ -875,11 +1067,39 @@ export const ru: Translations = {
 	ai_mode_corner_desc: 'Граничные: пустые, длинные, спецсимволы',
 	ai_mode_error: 'Error',
 	ai_mode_error_desc: 'Ответ-ошибка по схеме',
+	ai_mode_happy_req_desc: 'Валидное тело, которое примет сервер',
+	ai_mode_corner_req_desc: 'Граничные, но допустимые схемой значения',
+	ai_mode_error_req_desc: 'Невалидное тело для проверки валидации сервера',
 	ai_phrase_generating: ['Генерирую…', 'Заполняю…', 'Формирую…', 'Собираю…', 'Составляю…'],
 	ai_phrase_retrying: ['Оптимизирую…', 'Сокращаю…', 'Компактизирую…', 'Уменьшаю…'],
 
-	log_mockedCall: 'Мокированный запрос',
+	log_mockedCall: 'Мок ответа',
 	log_networkCall: 'Сетевой запрос',
+	log_patchedCall: 'Мок запроса',
+	log_mockedHeaders: 'Мок заголовков ответа',
+	send_title: 'Отправить запрос',
+	send_button: 'Отправить',
+	send_shortcut: 'Ctrl/⌘ + Enter',
+	send_credentials: 'Отправлять куки сайта',
+	send_credentialsHint: 'credentials: include. Выключите для API, которое не разрешает куки в CORS.',
+	send_body: 'Тело',
+	send_headers: 'Заголовки',
+	send_response: 'Ответ',
+	send_sending: 'Отправка…',
+	send_headersMissing: 'В Logs нет запросов к этому сайту, поэтому заголовки (в том числе Authorization) не подставлены. Обновите страницу сайта с открытой панелью или добавьте заголовки на вкладке «Заголовки».',
+	send_headersFromSite: (host) => `Заголовки взяты из последнего запроса к ${host}: вызовов этой ручки в Logs не было.`,
+	send_noBodyMethod: 'У GET и HEAD нет тела.',
+	send_binaryBody: 'Бинарное тело, не показывается.',
+	send_tooLargeBody: 'Тело больше допустимого размера, не показывается.',
+	send_noTab: 'Панель не привязана к вкладке.',
+	send_error_invalid: 'Неверный URL',
+	send_error_notAllowed: 'Mockman не разрешён на этом сайте: разрешите его в Настройки → Сайты',
+	send_error_unavailable: 'Нет связи со страницей: откройте или перезагрузите вкладку сайта',
+	send_error_network: 'Запрос не прошёл: сеть, CORS или браузер заблокировал. Попробуйте без кук.',
+	send_error_timeout: 'Нет ответа за 60 секунд',
+	log_sentCall: 'Отправлен из Mockman',
+	log_replay: 'Отправить ещё раз',
+	pane_sendNow: 'Отправить сейчас',
 	log_noLogs: 'Запросов пока нет',
 	log_noLogsHint: 'Здесь появятся XHR / fetch запросы.',
 	log_noSearch: 'Ничего не найдено',
@@ -899,11 +1119,21 @@ export const ru: Translations = {
 	logDetail_tabRequestBody: 'Тело запроса',
 	logDetail_tabQueryParams: 'Параметры',
 	logDetail_tabHeaders: 'Заголовки',
+	logDetail_largeBody: (size, lines) => `Большое тело: ${size}, ${lines} строк. Прокрутка внутри редактора, перенос строк и подсветка ошибок отключены.`,
+	logDetail_copy: 'Копировать',
+	logDetail_copied: 'Тело скопировано',
+	logDetail_download: 'Скачать',
+	logDetail_sentBody: 'Отправленное тело (изменено Mockman)',
+	logDetail_originalBody: 'Исходное тело от страницы',
 	logDetail_responseHeaders: 'Заголовки ответа',
 	logDetail_requestHeaders: 'Заголовки запроса',
 	logDetail_noHeaders: 'Заголовков нет',
 	logDetail_pending: 'Запрос выполняется…',
 	logDetail_nothingToPreview: 'Нет данных для отображения',
+	logDetail_binaryTitle: 'Бинарный ответ',
+	logDetail_binary: (size) => (size
+		? `Файл или бинарные данные, ${size}. Тело не сохраняется.`
+		: 'Файл или бинарные данные. Тело не сохраняется.'),
 	logDetail_bodyTooLargeTitle: 'Тело слишком большое',
 	logDetail_bodyTooLarge: (size, limit) => (size
 		? `Тело весит ${size}, больше ${limit}, поэтому не сохранено.`

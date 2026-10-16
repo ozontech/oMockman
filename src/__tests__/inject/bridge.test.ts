@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BRIDGE_HANDSHAKE } from '@/interface/bridge'
 import type { BridgeInjectMessage } from '@/interface/bridge'
-import { installBridge, isBridgeReady, resetBridgeForTests, resolveMock, sendLog } from '@/inject/bridge'
+import { installBridge, isBridgeReady, resetBridgeForTests, resolveMock, sendLog, takeLogSlot } from '@/inject/bridge'
 
 class FakeContentSide {
 	readonly received: BridgeInjectMessage[] = []
 	private readonly port: MessagePort
 
-	constructor(answer: (method: string, url: string) => unknown = () => null) {
+	constructor(answer: (method: string, url: string) => unknown = () => null, options: { noCache?: boolean } = {}) {
 		const channel = new MessageChannel()
 		this.port = channel.port1
 		this.port.onmessage = (evt: MessageEvent) => {
@@ -19,6 +19,7 @@ class FakeContentSide {
 					k: 'match:res',
 					id: message.id,
 					mock: answer(message.method, message.url),
+					...(options.noCache ? { noCache: true } : {}),
 				})
 			}
 		}
@@ -146,6 +147,23 @@ describe('inject/bridge', () => {
 		expect(content.matchRequests).toHaveLength(1)
 	})
 
+	it('keeps asking about an endpoint a scenario may answer later', async () => {
+		const content = new FakeContentSide(() => null, { noCache: true })
+
+		await resolveMock('POST', 'https://example.com/api/query')
+		await resolveMock('POST', 'https://example.com/api/query')
+
+		expect(content.matchRequests).toHaveLength(2)
+	})
+
+	it('passes the log id along, so a scenario hit can mark the right log', async () => {
+		const content = new FakeContentSide(() => null)
+
+		await resolveMock('GET', 'https://example.com/api', 'log-7')
+
+		expect(content.matchRequests[0]).toMatchObject({ k: 'match', logId: 'log-7' })
+	})
+
 	it('does not cache positive answers', async () => {
 		const content = new FakeContentSide(() => MOCK_ANSWER)
 
@@ -248,5 +266,62 @@ describe('inject/bridge', () => {
 		expect(content.received.filter((message) => message.k === 'log')).toEqual([
 			{ k: 'log', id: 'b', message: { hello: 2 } },
 		])
+	})
+
+	describe('log rate limit', () => {
+		const withLogging = async (): Promise<void> => {
+			const content = new FakeContentSide()
+			content.setLogging(true)
+			await flush()
+		}
+
+		afterEach(() => vi.restoreAllMocks())
+
+		it('gives no log slot while logging is off', async () => {
+			new FakeContentSide()
+			await flush()
+
+			expect(takeLogSlot('GET', 'https://example.com/a')).toBe(false)
+		})
+
+		it('logs a burst of 300 different requests and drops what comes on top', async () => {
+			vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+			await withLogging()
+
+			const granted = Array.from({ length: 320 }, (_, i) => takeLogSlot('GET', `https://example.com/api/${i}`))
+
+			expect(granted.slice(0, 300).every(Boolean)).toBe(true)
+			expect(granted.slice(300).some(Boolean)).toBe(false)
+		})
+
+		it('drops repeats first under load and keeps logging new requests', async () => {
+			vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+			await withLogging()
+			for (let i = 0; i < 150; i += 1) takeLogSlot('GET', `https://example.com/api/${i}`)
+
+			// Another query string is still the same polled endpoint.
+			expect(takeLogSlot('GET', 'https://example.com/api/0?_=123')).toBe(false)
+			expect(takeLogSlot('GET', 'https://example.com/api/new')).toBe(true)
+		})
+
+		it('logs a repeat while there is room for it', async () => {
+			vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+			await withLogging()
+
+			expect(takeLogSlot('GET', 'https://example.com/api/poll')).toBe(true)
+			expect(takeLogSlot('GET', 'https://example.com/api/poll')).toBe(true)
+		})
+
+		it('logs a dropped polled URL again once the repeat window has passed', async () => {
+			const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+			await withLogging()
+			for (let i = 0; i < 150; i += 1) takeLogSlot('GET', `https://example.com/api/${i}`)
+			expect(takeLogSlot('GET', 'https://example.com/api/0')).toBe(false)
+
+			// Ten seconds refill the budget too, so the URL is no repeat and there is room.
+			now.mockReturnValue(1_010_000)
+
+			expect(takeLogSlot('GET', 'https://example.com/api/0')).toBe(true)
+		})
 	})
 })

@@ -7,6 +7,8 @@ export interface BridgeHarness {
 	setLogging: (enabled: boolean) => void
 	bumpEpoch: (epoch: number) => void
 	setGate: (open: boolean) => void
+	/** Posts any content-side message, e.g. a send request. */
+	post: (message: unknown) => void
 	/** Resolves once the injected side has the verdict, as it does in a browser. */
 	ready: Promise<void>
 }
@@ -52,6 +54,7 @@ export function attachFakeContentSide(
 		setLogging: (enabled: boolean) => channel.port1.postMessage({ k: 'logging', enabled }),
 		bumpEpoch: (epoch: number) => channel.port1.postMessage({ k: 'epoch', epoch }),
 		setGate: (open: boolean) => channel.port1.postMessage({ k: 'gate', open }),
+		post: (message: unknown) => channel.port1.postMessage(message),
 		ready: flushMicrotasks(),
 	}
 }

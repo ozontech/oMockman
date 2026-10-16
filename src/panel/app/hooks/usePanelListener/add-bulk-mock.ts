@@ -6,6 +6,8 @@ import { describeSaveError, storeActions } from '@/panel/app/service'
 import { MethodEnum } from '@/interface/network'
 import type { IMockResponse, IMockResponseRaw } from '@/interface/mock'
 import { genId } from '@/services/helper'
+import { coerceRequestPatch } from '@/services/request-patch'
+import { resolveMockApply } from '@/services/mock-apply'
 
 export { genId }
 
@@ -20,6 +22,7 @@ export const useAddBulkMock = () => {
 				name: d.name ?? 'Recorded mock',
 				method: d.method ?? MethodEnum.GET,
 				url: d.url ?? '/',
+				openApiUrl: d.openApiUrl,
 				status: d.status ?? 200,
 				delay: d.delay ?? undefined,
 				active: d.active ?? true,
@@ -29,6 +32,8 @@ export const useAddBulkMock = () => {
 				description: d.description ?? '',
 				dynamic: d.dynamic ?? false,
 				collectionId: d.collectionId ?? null,
+				requestPatch: coerceRequestPatch(d.requestPatch),
+				apply: resolveMockApply(d),
 				action: d.action,
 			}))
 

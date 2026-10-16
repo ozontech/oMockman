@@ -58,7 +58,7 @@ export const AddMock: React.FC = () => {
 	const drawerClassName = useMemo(() => (closing ? 'mm-sd-leave' : 'mm-sd-enter'), [closing])
 
 	return (
-		<SideDrawer minWidth={550} storageKey="mockman.drawer.add" className={drawerClassName} onClickOutside={handleClose}>
+		<SideDrawer minWidth={550} storageKey="mockman.drawer.add" className={drawerClassName} onClickOutside={handleClose} dataTestId="add-mock-drawer">
 			<AddMockForm
 				key={key}
 				store={store}

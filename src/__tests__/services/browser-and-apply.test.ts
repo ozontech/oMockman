@@ -43,7 +43,6 @@ describe('MessageAPI.applyMocksNow', () => {
 		const calls: unknown[][] = []
 		const sendMessage = vi.fn((...args: unknown[]) => {
 			calls.push(args)
-			return Promise.resolve()
 		})
 		vi.stubGlobal('chrome', { tabs: { sendMessage }, runtime: { sendMessage: vi.fn() } })
 
@@ -58,33 +57,28 @@ describe('MessageAPI.applyMocksNow', () => {
 			id: 7,
 			extensionName: 'MOCKMAN',
 		})
+		expect(calls[0][2]).toEqual({ frameId: 0 })
+		expect(typeof calls[0][3]).toBe('function')
 	})
 
-	it('passes a callback to a three-argument sendMessage', async () => {
-		const calls: unknown[][] = []
-		const sendMessage = function (tabId: unknown, message: unknown, callback: unknown) {
-			calls.push([tabId, message, callback])
-		}
-		vi.stubGlobal('chrome', { tabs: { sendMessage }, runtime: { sendMessage: vi.fn() } })
+	it('goes through the background when the tabs API is missing, as in Firefox DevTools', async () => {
+		const sendMessage = vi.fn().mockResolvedValue({ ok: true, value: true })
+		vi.stubGlobal('chrome', { runtime: { sendMessage } })
 
 		;(await load()).applyMocksNow(7, false)
 
-		expect(calls).toHaveLength(1)
-		expect(typeof calls[0][2]).toBe('function')
-	})
-
-	it('passes options and a callback to a four-argument sendMessage', async () => {
-		const calls: unknown[][] = []
-		const sendMessage = function (tabId: unknown, message: unknown, options: unknown, callback: unknown) {
-			calls.push([tabId, message, options, callback])
-		}
-		vi.stubGlobal('chrome', { tabs: { sendMessage }, runtime: { sendMessage: vi.fn() } })
-
-		;(await load()).applyMocksNow(7)
-
-		expect(calls).toHaveLength(1)
-		expect(calls[0][2]).toBeUndefined()
-		expect(typeof calls[0][3]).toBe('function')
+		expect(sendMessage).toHaveBeenCalledWith({
+			type: 'PANEL_SEND_TO_TAB',
+			tabId: 7,
+			message: {
+				message: { kind: 'APPLY_MOCKS', active: false },
+				from: 'PANEL',
+				to: 'CONTENT',
+				type: 'NOTIFICATION',
+				id: 7,
+				extensionName: 'MOCKMAN',
+			},
+		})
 	})
 
 	it('does nothing without a tab id', async () => {

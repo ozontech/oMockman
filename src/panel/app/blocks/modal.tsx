@@ -7,6 +7,7 @@ import { AddMock } from '@/panel/app/mocks/addMock/add-mock'
 import { AddMockDetached } from '@/panel/app/mocks/addMock/add-mock-detached'
 import { LogDetails } from '@/panel/app/logs/logDetails/log-details'
 import { LogDetailsDetached } from '@/panel/app/logs/logDetails/log-details-detached'
+import { SendRequestModal } from '@/panel/app/send/send-request-modal'
 
 export const Modal: React.FC = () => {
 	const selectedMock = useChromeStore((s) => s.selectedMock)
@@ -20,6 +21,7 @@ export const Modal: React.FC = () => {
 		<>
 			{selectedLog && <LogDetails log={selectedLog} onClose={() => setSelectedLog()} />}
 			{selectedMock && <AddMock />}
+			<SendRequestModal />
 
 			{detachedMocks.map((item) => (
 				<AddMockDetached

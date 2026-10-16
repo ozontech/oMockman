@@ -5,6 +5,24 @@ export interface ICollectionEntry {
 	type: CollectionEntryType
 }
 
+/**
+ * One call of an endpoint: the Nth rule of METHOD + URL answers its Nth call, with a mock of the
+ * collection or the real response. The endpoint's last rule answers every later call too.
+ */
+export interface IScenarioRule {
+	id: string
+	method: string
+	/** A template like a mock URL: env variables and `:params` work. */
+	url: string
+	respond: { mockId: string } | { network: true }
+}
+
+/** Lets one endpoint answer differently call after call. */
+export interface ICollectionScenario {
+	enabled: boolean
+	rules: IScenarioRule[]
+}
+
 export interface ICollectionNode {
 	id: string
 	name: string
@@ -12,8 +30,8 @@ export interface ICollectionNode {
 	active: boolean
 	createdOn: number
 	description?: string
-	openApiUrl?: string
 	aiPrompt?: string
+	scenario?: ICollectionScenario
 	entries: ICollectionEntry[]
 }
 

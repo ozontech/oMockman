@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ClearButton } from '@/panel/app/header/clear-button'
 import { DocsButton } from '@/panel/app/header/docs-button'
-import { ThemeButton } from '@/panel/app/header/theme-button'
 import { translations } from '@/panel/app/i18n/translations'
 import { useGlobalStore, useLogStore } from '@/panel/app/store'
 
@@ -28,29 +27,6 @@ describe('header buttons', () => {
 			await waitFor(() => expect(useLogStore.getState().logs).toHaveLength(0))
 			expect(useLogStore.getState().selectedLog).toBeUndefined()
 			expect(useLogStore.getState().isClearing).toBe(false)
-		})
-	})
-
-	describe('ThemeButton', () => {
-		it('switches the scheme and the icon', () => {
-			const { container } = render(<ThemeButton />)
-
-			expect(container.querySelector('.moon')).not.toBeNull()
-
-			fireEvent.click(screen.getByTitle('Dark theme'))
-
-			expect(useGlobalStore.getState().scheme).toBe('dark')
-		})
-
-		it('offers the way back once dark is on', () => {
-			useGlobalStore.setState({ scheme: 'dark' })
-
-			const { container } = render(<ThemeButton />)
-
-			expect(container.querySelector('.sun')).not.toBeNull()
-			fireEvent.click(screen.getByTitle('White theme'))
-
-			expect(useGlobalStore.getState().scheme).toBe('light')
 		})
 	})
 

@@ -17,6 +17,7 @@ interface SideDrawerProps {
 	detached?: boolean
 	className?: string
 	onClickOutside?: () => void
+	dataTestId?: string
 }
 
 const PORTAL_SELECTOR = '.ui.modal, .ui.popup, .Toastify, .cm-tooltip'
@@ -30,6 +31,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
 	detached = false,
 	className,
 	onClickOutside,
+	dataTestId,
 }) => {
 
 	const clamp = (value: number): number => {
@@ -147,6 +149,7 @@ body.dark #${host.id} *::-webkit-scrollbar-thumb { background: #565656; border-r
 					maxWidth: 'none',
 					boxShadow: 'none',
 				}}
+				data-testid={dataTestId}
 			>
 				<div className={s.content}>{children}</div>
 			</div>
@@ -159,8 +162,9 @@ body.dark #${host.id} *::-webkit-scrollbar-thumb { background: #565656; border-r
 			className={`mm-side-drawer ${s.root} ${className ?? ''}`.trim()}
 			style={{
 				width,
-				maxWidth,
+				maxWidth: `min(${maxWidth}px, 100vw)`,
 			}}
+			data-testid={dataTestId}
 		>
 			<div onMouseDown={handleMouseDown} className={s.resizeHandle} />
 			<div className={s.content}>{children}</div>

@@ -1,6 +1,7 @@
 import { tryHandleAIMessage } from '@/background/ai-handler'
+import { migrateLegacyKeys } from '@/background/secrets'
 import { isExtensionPageSender } from '@/background/sender'
-import { getSecuritySettings } from '@/background/store-access'
+import { getSecuritySettings, STORE_KEY } from '@/background/store-access'
 import { clearHeaders, getHeaders, setHeaders } from '@/background/headers-store'
 import { fetchOpenApiSpec } from '@/background/openapi-fetch'
 import type { IEventMessage } from '@/interface/message'
@@ -12,13 +13,30 @@ import { canonicalOrigin } from '@/services/origin'
  * - answers GET_RESPONSE_HEADERS from the content script
  */
 
+/**
+ * AI keys used to sit in the main store, which the panel and every content script read. They are
+ * moved out on each worker start, and again whenever a write from an older panel brings one back.
+ */
+const moveKeysOutOfStore = (): void => {
+	migrateLegacyKeys().catch(() => undefined)
+}
+moveKeysOutOfStore()
+try {
+	chrome.storage.onChanged.addListener((changes, areaName) => {
+		if (areaName !== 'local' || !changes?.[STORE_KEY]) return
+		const providers = (changes[STORE_KEY].newValue as { ai?: { providers?: Array<{ apiKey?: unknown }> } } | undefined)?.ai?.providers
+		if (Array.isArray(providers) && providers.some((provider) => typeof provider?.apiKey === 'string')) moveKeysOutOfStore()
+	})
+} catch {
+	void 0
+}
+
 const panelPortsByTab = new Map<number, Set<chrome.runtime.Port>>()
 const panelPortTabs = new WeakMap<chrome.runtime.Port, number>()
 
 const contentPortsByTab = new Map<number, Set<chrome.runtime.Port>>()
 const loggingEnabledByTab = new Map<number, boolean>()
 
-// Traffic is captured only while a panel is open for the tab with logging on.
 const isCaptureEnabled = (tabId: number): boolean =>
 	(panelPortsByTab.get(tabId)?.size ?? 0) > 0 && loggingEnabledByTab.get(tabId) !== false
 
@@ -28,8 +46,6 @@ const pushCaptureState = (tabId: number): void => {
 		postToContentByTab(tabId, message)
 		return
 	}
-	// A stopped worker closes the content port, and the content script reopens it only to send
-	// a log, which it does not do while capture is off. A tab message still reaches it.
 	try {
 		chrome.tabs.sendMessage(tabId, message, () => void chrome.runtime.lastError)
 	} catch {
@@ -143,7 +159,7 @@ chrome.runtime.onConnect.addListener((port) => {
 			panelPortTabs.delete(port)
 			if (!panelPortsByTab.has(tabId)) {
 				loggingEnabledByTab.delete(tabId)
-				clearHeaders()
+				clearHeaders(tabId)
 			}
 			pushCaptureState(tabId)
 		}
@@ -178,7 +194,7 @@ chrome.webRequest.onResponseStarted.addListener(
 		if (details.type === 'main_frame' || details.type === 'sub_frame') return
 		if (!isValidTabId(details.tabId) || !isCaptureEnabled(details.tabId)) return
 
-		setHeaders(details.method, details.url, details.responseHeaders)
+		setHeaders(details.tabId, details.method, details.url, details.responseHeaders)
 	},
 	{ urls: ['<all_urls>'] },
 	['responseHeaders'],
@@ -231,7 +247,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	if (request.type === 'GET_RESPONSE_HEADERS') {
 		const method = String(request.method ?? '')
 		const url = String(request.url ?? '')
-		const headers = getHeaders(method, url)
+		// Only a content script asks, and only about its own tab.
+		const headers = isValidTabId(senderTabId) ? getHeaders(senderTabId, method, url) : []
 		sendResponse({ headers })
 		return true
 	}
@@ -239,6 +256,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	if (request.type === 'PANEL_QUERY_TABS') {
 		try {
 			chrome.tabs.query(request.query ?? {}, (tabs) => {
+				void chrome.runtime.lastError
 				sendResponse({ tabs: tabs ?? [] })
 			})
 		} catch {
@@ -260,6 +278,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		}
 		try {
 			chrome.tabs.get(tabId, (tab) => {
+				// Reading lastError keeps a closed tab out of the extension's error log.
+				void chrome.runtime.lastError
 				sendResponse({ origin: canonicalOrigin(tab?.url) })
 			})
 		} catch {
@@ -276,10 +296,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		}
 		try {
 			chrome.tabs.get(tabId, (tab) => {
+				void chrome.runtime.lastError
 				sendResponse({ tab: tab ?? null })
 			})
 		} catch {
 			sendResponse({ tab: null })
+		}
+		return true
+	}
+
+	/** DevTools pages in Firefox have no `tabs` API, so the panel asks the worker to message a tab. */
+	if (request.type === 'PANEL_SEND_TO_TAB') {
+		const tabId = request.tabId
+		if (typeof tabId !== 'number' || !isObject(request.message)) {
+			sendResponse({ ok: false, error: 'No tab to message.' })
+			return true
+		}
+		try {
+			chrome.tabs.sendMessage(tabId, request.message, { frameId: 0 }, (value) => {
+				const lastError = chrome.runtime.lastError
+				if (lastError) sendResponse({ ok: false, error: lastError.message ?? 'No connection to the page' })
+				else if (value === undefined) sendResponse({ ok: false, error: 'No answer from the page' })
+				else sendResponse({ ok: true, value })
+			})
+		} catch (error) {
+			sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) })
 		}
 		return true
 	}

@@ -109,8 +109,9 @@ export const useGlobalStore = create<GlobalStoreState>((set, get) => ({
 	setScheme: (scheme) => {
 		const resolved = resolveScheme(scheme)
 		if (typeof window !== 'undefined') {
-			document.body.classList.add('mm-theme-anim')
-			window.setTimeout(() => document.body.classList.remove('mm-theme-anim'), 350)
+			const { body } = document
+			body.classList.add('mm-theme-anim')
+			window.setTimeout(() => body.classList.remove('mm-theme-anim'), 350)
 			localStorage.setItem('mockman.theme', scheme)
 			applyScheme(resolved)
 		}

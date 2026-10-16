@@ -1,5 +1,6 @@
 export * from './actions-column'
 export * from './cell-helpers'
+export * from './created-column'
 export * from './delay-column'
 export * from './method-column'
 export * from './name-column'

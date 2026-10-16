@@ -38,8 +38,11 @@ const store = (overrides: Partial<IStore> = {}): IStore => ({
 	...overrides,
 } as unknown as IStore)
 
-const lastSavedStore = (): IStore =>
-	(persistStoreChange.mock.calls.at(-1)?.[0] as unknown as { updatedStore: IStore }).updatedStore
+/** A write may pass the store as a function, evaluated when its turn in the write queue comes. */
+const lastSavedStore = (): IStore => {
+	const { updatedStore } = persistStoreChange.mock.calls.at(-1)?.[0] as unknown as { updatedStore: IStore | (() => IStore) }
+	return typeof updatedStore === 'function' ? updatedStore() : updatedStore
+}
 
 type UpdateListener = (tabId: number, changeInfo: { url?: string; status?: string }) => void
 

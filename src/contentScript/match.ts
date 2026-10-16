@@ -41,19 +41,18 @@ export function getActiveMockWithPath(
 }
 
 /**
- * Fills in how the log should show the request. The page world says whether a mock was served;
- * a matching mock alone proves nothing, since the request may have left before the bridge was
- * up or on a site that was not allowed. The mock path is looked up only to link the log to it.
+ * Fills in how the log should show the request. The page world says whether a mock was served or
+ * the request patched; a matching mock alone proves nothing, since the request may have left
+ * before the bridge was up or on a site that was not allowed. The mock path is looked up only to
+ * link the log to it.
  */
 export function markMockedInLog(
 	log: ILog,
 	state: { store: IStore; urlMap: IURLMap; dynamicUrlMap: IDynamicURLMap } | undefined,
 ): void {
 	if (!state || !log.request?.url || !log.request?.method) return
-	if (log.isMocked !== true) {
-		log.isMocked = false
-		return
-	}
+	if (log.isMocked !== true) log.isMocked = false
+	if (!log.isMocked && log.isPatched !== true) return
 	const paths = getMockPaths(log.request.url, log.request.method, {
 		urlMap: state.urlMap,
 		dynamicUrlMap: state.dynamicUrlMap,

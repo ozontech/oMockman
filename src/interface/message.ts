@@ -28,6 +28,8 @@ export const TUNNEL = {
 export const AI_MESSAGE_TYPE = {
 	chat: 'AI_CHAT',
 	testConnection: 'AI_TEST_CONNECTION',
+	setKey: 'AI_SET_KEY',
+	deleteKey: 'AI_DELETE_KEY',
 } as const
 
 export interface IAIChatRuntimeRequest {
@@ -40,9 +42,34 @@ export interface IAIChatRuntimeRequest {
 
 export interface IAITestConnectionRuntimeRequest {
 	type: typeof AI_MESSAGE_TYPE.testConnection
+	/** The connection as it is in the form. A key in it is ignored. */
 	provider: IAIProviderConfig
+	/** A key typed into the form just now. */
+	apiKey?: string
+	/** Without `apiKey`, this connection's saved key is used, if its origin still matches. */
+	providerId?: string
 }
 
-export type AIRuntimeRequest = IAIChatRuntimeRequest | IAITestConnectionRuntimeRequest
+/** Write-only: nothing ever reads a key back to a page. */
+export interface IAISetKeyRuntimeRequest {
+	type: typeof AI_MESSAGE_TYPE.setKey
+	providerId: string
+	apiKey: string
+	/** The key is bound to this URL's origin. */
+	baseURL: string
+}
+
+export interface IAIDeleteKeyRuntimeRequest {
+	type: typeof AI_MESSAGE_TYPE.deleteKey
+	providerId: string
+}
+
+export type AIRuntimeRequest =
+	| IAIChatRuntimeRequest
+	| IAITestConnectionRuntimeRequest
+	| IAISetKeyRuntimeRequest
+	| IAIDeleteKeyRuntimeRequest
 
 export type AIRuntimeResponse = AIChatResponse
+
+export type AIKeyRuntimeResponse = { ok: true; mask?: string } | { ok: false; error: string }

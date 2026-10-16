@@ -18,7 +18,7 @@ const mock = (status: number | undefined): IMockResponse => ({
 } as unknown as IMockResponse)
 
 const statusInputFor = (status: number | undefined): string =>
-	renderHook(() => useAddMockFormState({ selectedMock: mock(status), selectedCollectionOpenApiUrl: '' }))
+	renderHook(() => useAddMockFormState({ selectedMock: mock(status) }))
 		.result.current.statusInput
 
 describe('status field of the mock form', () => {

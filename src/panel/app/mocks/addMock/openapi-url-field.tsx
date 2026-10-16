@@ -13,6 +13,8 @@ interface Suggestion {
 interface OpenApiUrlFieldProps {
 	isDark: boolean
 	value: string
+	/** Why the body was not checked against the schema, when it was not. */
+	checkSkippedText?: string
 	inputRef: React.RefObject<HTMLInputElement>
 	error?: string
 	loading: boolean
@@ -29,6 +31,7 @@ interface OpenApiUrlFieldProps {
 export const OpenApiUrlField: React.FC<OpenApiUrlFieldProps> = ({
 	isDark,
 	value,
+	checkSkippedText,
 	inputRef,
 	error,
 	loading,
@@ -79,6 +82,9 @@ export const OpenApiUrlField: React.FC<OpenApiUrlFieldProps> = ({
 				)}
 			</div>
 			{error ? <div className={s.openapiError}>{error}</div> : null}
+			{checkSkippedText ? (
+				<div className={s.openapiHint} data-testid="openapi-check-skipped">{checkSkippedText}</div>
+			) : null}
 			{suggestionsPartial ? (
 				<div className={s.openapiHint}>{t.mock_openApiPartial}</div>
 			) : null}

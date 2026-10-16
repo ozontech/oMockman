@@ -66,6 +66,7 @@ describe('origin change', () => {
 		vi.stubGlobal('chrome', {
 			runtime: {
 				id: 'test-extension-id',
+				getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
 				onConnect: { addListener: (cb: Listener) => connectListeners.push(cb) },
 				onMessage: { addListener: vi.fn() },
 				lastError: undefined,

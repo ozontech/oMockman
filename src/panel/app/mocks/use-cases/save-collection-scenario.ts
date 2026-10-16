@@ -1,20 +1,18 @@
 import { persistStoreChange, storeActions } from '@/panel/app/service'
 import type { StoreProperties } from '@/panel/app/store/use-mock-store'
+import type { ICollectionScenario } from '@/interface/collection'
 import type { IStore } from '@/interface/mock'
 
-export async function saveCollectionOpenApiSettings(input: {
+export async function saveCollectionScenario(input: {
 	store: IStore
 	collectionId: string
-	openApiUrl: string
+	scenario: ICollectionScenario | undefined
 	setStoreProperties: (p: StoreProperties) => void
 	tabId?: number
 }): Promise<void> {
-	const { store, collectionId, openApiUrl, setStoreProperties, tabId } = input
-	let nextStore = storeActions.updateCollectionOpenApiUrl(structuredClone(store), collectionId, openApiUrl)
-	nextStore = storeActions.applyCollectionOpenApiToMocks(nextStore, collectionId, openApiUrl)
-
+	const { store, collectionId, scenario, setStoreProperties, tabId } = input
 	await persistStoreChange({
-		updatedStore: nextStore,
+		updatedStore: storeActions.updateCollectionScenario(structuredClone(store), collectionId, scenario),
 		setStoreProperties,
 		tabId,
 		applyMocksNow: false,

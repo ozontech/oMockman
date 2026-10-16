@@ -40,17 +40,16 @@ export const SitesTab: React.FC<SettingsTabProps> = ({ isDark }) => {
 	const dirty = draftAutoGrant !== autoGrant || pendingRevokes.length > 0
 
 	const handleSave = useCallback(async () => {
-		const current = useChromeStore.getState().store
-		const updatedStore = pendingRevokes.reduce<IStore>(
+		const updatedStore = (): IStore => pendingRevokes.reduce<IStore>(
 			(draft, origin) => revokeSitePermission(draft, origin),
-			{ ...current, autoGrantSites: draftAutoGrant },
+			{ ...useChromeStore.getState().store, autoGrantSites: draftAutoGrant },
 		)
 		try {
 			await persistStoreChange({ updatedStore, setStoreProperties, tabId, applyMocksNow: false })
 			setPendingRevokes([])
 			toast.success(t.toast_settingsSaved)
 		} catch (error) {
-			toast.error(describeSaveError(error, t, t.toast_settingsSaved))
+			toast.error(describeSaveError(error, t, t.toast_storageWriteFailed(error instanceof Error ? error.message : 'unknown error')))
 		}
 	}, [draftAutoGrant, pendingRevokes, setStoreProperties, tabId, t])
 

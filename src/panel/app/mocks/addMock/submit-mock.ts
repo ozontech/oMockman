@@ -20,7 +20,11 @@ export async function submitMock(opts: {
 }): Promise<void> {
 	const { store, isNew, values, tabId, setStoreProperties, handleClose, setSelectedMock } = opts
 
-	const payload: IMockResponse = buildMockPayload({ ...values, id: values.id ?? genId() })
+	const payload: IMockResponse = buildMockPayload({
+		...values,
+		id: values.id ?? genId(),
+		createdOn: values.createdOn ?? (isNew ? Date.now() : undefined),
+	})
 	const updatedStore = isNew ? storeActions.addMocks(store, payload) : storeActions.updateMocks(store, payload)
 
 	try {

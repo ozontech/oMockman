@@ -56,6 +56,7 @@ export function createActionsColumn(params: CreateMocksTableSchemaParams): Table
 		header: t.mocks_colActions,
 		minWidth: 150,
 		width: 180,
+		stickyEnd: true,
 		content: (row) => (
 			<div style={{ width: '100%', height: '100%' }} {...getCellDndHandlers(row)}>
 				{row.rowType === 'mock' ? (

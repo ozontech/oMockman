@@ -1,0 +1,36 @@
+.scenario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #c7b4ee;
+  border-radius: 11px;
+  font: inherit;
+  color: #5829b8;
+  background: #f1ebfc;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #e4d8fa;
+  }
+
+  :global(i.icon) {
+    height: 1em;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1;
+  }
+}
+
+:global(body.dark) .scenario {
+  color: #c9b3f5;
+  background: rgb(100 53 201 / 20%);
+  border-color: rgb(100 53 201 / 50%);
+
+  &:hover {
+    background: rgb(100 53 201 / 35%);
+  }
+}

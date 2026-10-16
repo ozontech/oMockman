@@ -27,6 +27,8 @@ function describeFailure(response: IAIChatResponseError): TestConnectionState {
 
 export const TestConnectionButton: React.FC<ITestConnectionButtonProps> = ({
 	provider,
+	apiKey,
+	providerId,
 	disabled,
 	isDark,
 }) => {
@@ -36,14 +38,14 @@ export const TestConnectionButton: React.FC<ITestConnectionButtonProps> = ({
 	const handleClick = useCallback(async () => {
 		setState({ status: 'pending' })
 		const startedAt = Date.now()
-		const response = await aiTestConnection({ provider })
+		const response = await aiTestConnection({ provider, apiKey, providerId })
 		const durationMs = Date.now() - startedAt
 		if (response.ok) {
 			setState({ status: 'ok', durationMs, model: response.model })
 		} else {
 			setState(describeFailure(response))
 		}
-	}, [provider])
+	}, [provider, apiKey, providerId])
 
 	const isPending = state.status === 'pending'
 

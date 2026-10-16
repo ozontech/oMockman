@@ -5,6 +5,51 @@
 	overflow-y: auto;
 }
 
+.tableWrapper::-webkit-scrollbar {
+	width: 10px;
+	height: 12px;
+}
+
+.tableWrapper::-webkit-scrollbar-track,
+.tableWrapper::-webkit-scrollbar-corner {
+	background: color-mix(in srgb, var(--bg), #000000 4%);
+}
+
+.tableWrapper::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--bg), #000000 25%);
+	border: 2px solid transparent;
+	border-radius: 8px;
+	background-clip: padding-box;
+}
+
+.tableWrapper::-webkit-scrollbar-thumb:hover {
+	background-color: color-mix(in srgb, var(--bg), #000000 40%);
+}
+
+:global(body.dark) .tableWrapper::-webkit-scrollbar-track,
+:global(body.dark) .tableWrapper::-webkit-scrollbar-corner {
+	background: color-mix(in srgb, var(--bg), #ffffff 4%);
+}
+
+:global(body.dark) .tableWrapper::-webkit-scrollbar-thumb {
+	background-color: color-mix(in srgb, var(--bg), #ffffff 25%);
+}
+
+:global(body.dark) .tableWrapper::-webkit-scrollbar-thumb:hover {
+	background-color: color-mix(in srgb, var(--bg), #ffffff 40%);
+}
+
+@supports (-moz-appearance: none) {
+	.tableWrapper {
+		scrollbar-width: auto;
+		scrollbar-color: color-mix(in srgb, var(--bg), #000000 25%) transparent;
+	}
+
+	:global(body.dark) .tableWrapper {
+		scrollbar-color: color-mix(in srgb, var(--bg), #ffffff 25%) transparent;
+	}
+}
+
 .table {
 	table-layout: fixed;
 	width: 100%;
@@ -184,4 +229,65 @@
 	animation: mmRowEnterRtl 180ms ease;
 }
 
+// Pinned to the right edge while the table scrolls sideways. A pinned cell has to be opaque,
+// so the translucent row tints Semantic and the mocks table use are repeated here, mixed into
+// the table background. Later rules win: striping, then collections, hover, drop, selection.
+.stickyEnd {
+	--mm-sticky-base: var(--bg);
+	position: sticky !important;
+	right: 0;
+	background-color: var(--mm-sticky-base) !important;
+	box-shadow: -1px 0 0 var(--border), -8px 0 8px -8px rgba(0, 0, 0, 0.3) !important;
+}
 
+.stickyEnd:has(:global(.ui.dropdown.active)) {
+	z-index: 50;
+}
+
+:global(.ui.inverted.table) .stickyEnd {
+	--mm-sticky-base: #333333;
+}
+
+.th.stickyEnd {
+	background-color: var(--bg) !important;
+}
+
+:global(.ui.striped.table) tbody tr:nth-child(2n) td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), rgb(0 0 50) 2%) !important;
+}
+
+:global(.ui.inverted.striped.table) tbody tr:nth-child(2n) td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), #ffffff 5%) !important;
+}
+
+:global(.ui.table) tbody tr[data-row-type='mock'][data-collection-id]:not([data-collection-id='']) td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), #000000 8%) !important;
+}
+
+:global(.ui.inverted.table) tbody tr[data-row-type='mock'][data-collection-id]:not([data-collection-id='']) td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), #ffffff 8%) !important;
+}
+
+:global(.ui.selectable.table) tbody tr:hover td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), #000000 5%) !important;
+}
+
+:global(.ui.selectable.inverted.table) tbody tr:hover td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), #ffffff 8%) !important;
+}
+
+:global(.ui.table) tbody tr:global(.mm-drop-target) td.stickyEnd {
+	background-color: color-mix(in srgb, var(--mm-sticky-base), rgb(33 150 243) 8%) !important;
+}
+
+:global(.ui.table) tbody tr:global(.active) td.stickyEnd {
+	background-color: #e0e0e0 !important;
+}
+
+.scenarioCell {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}

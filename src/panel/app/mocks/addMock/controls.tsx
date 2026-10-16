@@ -73,6 +73,7 @@ export const MethodToggle: React.FC<{
 							color="blue"
 							active={isActive}
 							onClick={() => onChange(methodOption)}
+							data-testid={`method-${methodOption}`}
 							className={[
 								s.methodBtn,
 								isDark ? s.methodBtnDark : s.methodBtnLight,

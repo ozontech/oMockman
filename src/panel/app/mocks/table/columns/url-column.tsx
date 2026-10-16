@@ -16,6 +16,7 @@ export function createUrlColumn(params: CreateMocksTableSchemaParams): TableSche
 		columnKey: 'url',
 		resizable: true,
 		minResizableWidth: 320,
+		minFitWidth: 200,
 		width: columnWidths.url,
 		content: (row: Row) => row.rowType === 'mock' ? (
 			<div className={s.textWrapLeft} style={{ paddingLeft: 0 }}>

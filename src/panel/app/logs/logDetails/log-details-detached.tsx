@@ -7,6 +7,7 @@ import { useChromeStore, useGlobalStore } from '../../store'
 import s from './log-details.module.scss'
 import { LogDetailsHeader } from './log-details-header'
 import { LogDetailsJson } from './log-details-json'
+import { LogRequestBody } from './log-request-body'
 import { StickyTopBlock } from './top-block'
 
 import { SideDrawer } from '@/panel/app/blocks'
@@ -53,13 +54,13 @@ export const LogDetailsDetached: React.FC<Props> = ({ log, onClose }) => {
 			case 0:
 				return (
 					<Segment basic inverted={isDark} style={{ padding: 0 }}>
-						<LogDetailsJson isRequestPending={isPending} response={log.response?.response} useEditor={false} tooLargeBytes={log.response?.tooLarge ? (log.response.size ?? 0) : undefined} />
+						<LogDetailsJson isRequestPending={isPending} response={log.response?.response} useEditor={false} tooLargeBytes={log.response?.tooLarge ? (log.response.size ?? 0) : undefined} binaryBytes={log.response?.binary ? (log.response.size ?? 0) : undefined} />
 					</Segment>
 				)
 			case 1:
 				return (
 					<Segment basic inverted={isDark} style={{ padding: 0 }}>
-						<LogDetailsJson isRequestPending={isPending} response={log.request?.body} tooLargeBytes={log.request?.bodyTooLarge ? (log.request.bodySize ?? 0) : undefined} />
+						<LogRequestBody log={log} isPending={isPending} />
 					</Segment>
 				)
 			case 2:

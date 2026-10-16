@@ -14,7 +14,7 @@ import { StorageWriteError } from './storage-error'
 
 import { createDefaultAISettings, normalizeAISettings } from '@/services/ai'
 import { createEmptyCollectionTree } from '@/interface/collection'
-import type { ICollectionEntry, ICollectionNode } from '@/interface/collection'
+import type { ICollectionEntry, ICollectionNode, ICollectionScenario } from '@/interface/collection'
 import type { IDynamicURLMap, IMockResponse, IStore, IURLMap } from '@/interface/mock'
 import { MessageAPI } from '@/services/message/api'
 import { getActiveEnvVars, normalizeEnv, resolveTemplate } from '@/services/env'
@@ -207,6 +207,16 @@ export const addMocks = (
 	}
 }
 
+/** Points the rules of an imported scenario at the new ids of its mocks; a rule whose mock did not come along goes. */
+function remapScenario(scenario: ICollectionScenario, mockIdMap: Map<string, string>): ICollectionScenario {
+	const rules = scenario.rules.flatMap((rule) => {
+		if (!('mockId' in rule.respond)) return [rule]
+		const mockId = mockIdMap.get(rule.respond.mockId)
+		return mockId ? [{ ...rule, respond: { mockId } }] : []
+	})
+	return { ...scenario, rules }
+}
+
 export const importCollectionBundle = (
 	draft: IStore,
 	bundle: MockmanExportBundle,
@@ -283,6 +293,7 @@ export const importCollectionBundle = (
 			id: newId,
 			name: node.name ?? 'Collection',
 			parentId: mapCollectionId(node.parentId) ?? null,
+			scenario: node.scenario && remapScenario(node.scenario, mockIdMap),
 			entries,
 		}
 	}
@@ -437,31 +448,20 @@ export const renameCollection = (draft: IStore, collectionId: string, name: stri
 	}
 }
 
-export const updateCollectionOpenApiUrl = (draft: IStore, collectionId: string, openApiUrl: string): IStore => {
+/** Saves a collection's scenario; none removes it. */
+export const updateCollectionScenario = (
+	draft: IStore,
+	collectionId: string,
+	scenario: ICollectionScenario | undefined,
+): IStore => {
 	const existing = draft.collectionTree.nodes[collectionId]
 	if (!existing) return draft
 	return {
 		...draft,
 		collectionTree: {
 			...draft.collectionTree,
-			nodes: {
-				...draft.collectionTree.nodes,
-				[collectionId]: { ...existing, openApiUrl: openApiUrl || undefined },
-			},
+			nodes: { ...draft.collectionTree.nodes, [collectionId]: { ...existing, scenario } },
 		},
-	}
-}
-
-export const applyCollectionOpenApiToMocks = (draft: IStore, collectionId: string, openApiUrl: string): IStore => {
-	const collectionIds = collectDescendantCollections(draft.collectionTree, collectionId)
-	const mocks = draft.mocks.map((mock) => {
-		const ownerCollectionId = mock.collectionId ?? ''
-		if (!collectionIds.has(ownerCollectionId)) return mock
-		return { ...mock, openApiUrl: openApiUrl || undefined }
-	})
-	return {
-		...draft,
-		mocks,
 	}
 }
 
@@ -516,9 +516,14 @@ function collectDescendantCollections(tree: { nodes: Record<string, ICollectionN
 	return acc
 }
 
+/**
+ * Switches a collection with its subcollections. Switching off turns every mock of the branch off;
+ * switching on leaves them off, to be turned on one by one.
+ */
 export const setCollectionBranchActive = (draft: IStore, collectionId: string, active: boolean): IStore => {
 	if (!draft.collectionTree.nodes[collectionId]) return draft
 	const collectionIds = collectDescendantCollections(draft.collectionTree, collectionId)
+	const inBranch = (mock: IMockResponse) => collectionIds.has(mock.collectionId ?? '')
 
 	const nodes: Record<string, ICollectionNode> = {}
 	for (const [id, node] of Object.entries(draft.collectionTree.nodes)) {
@@ -529,11 +534,7 @@ export const setCollectionBranchActive = (draft: IStore, collectionId: string, a
 		}
 	}
 
-	const mocks = draft.mocks.map((mock) => {
-		const ownerCollectionId = mock.collectionId ?? ''
-		if (!collectionIds.has(ownerCollectionId)) return mock
-		return { ...mock, active }
-	})
+	const mocks = active ? draft.mocks : draft.mocks.map((mock) => (inBranch(mock) && mock.active ? { ...mock, active: false } : mock))
 
 	return {
 		...draft,
@@ -582,8 +583,7 @@ export const storeActions = {
 	deleteMocks,
 	createCollection,
 	renameCollection,
-	updateCollectionOpenApiUrl,
-	applyCollectionOpenApiToMocks,
+	updateCollectionScenario,
 	setCollectionBranchActive,
 	applyCollectionMove,
 	deleteCollectionDeep,

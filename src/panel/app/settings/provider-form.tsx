@@ -14,6 +14,7 @@ import { modalActionsSurface, modalHeaderSurface, modalSurface } from '@/panel/a
 import { safeNumberFloat, safeNumberInt } from '@/services/number'
 import type { IAIProviderConfig, IProviderFormProps, ProviderDraft } from '@/interface/ai'
 import { createProvider } from '@/services/ai'
+import { canonicalOrigin } from '@/services/origin'
 
 const FieldLabel: React.FC<{ text: string; tip: string }> = ({ text, tip }) => {
 	const [visible, setVisible] = useState(false)
@@ -99,7 +100,8 @@ function toDraft(provider: IAIProviderConfig | null | undefined): ProviderDraft 
 	return {
 		name: provider.name,
 		baseURL: provider.baseURL,
-		apiKey: provider.apiKey,
+		// The saved key never comes back to the panel: the field is for a new one.
+		apiKey: '',
 		model: provider.model,
 		authHeader: provider.authHeader ?? '',
 		authPrefix: provider.authPrefix ?? '',
@@ -129,8 +131,16 @@ function parseIntOrUndefined(value: string): number | undefined {
 	return safeNumberInt(trimmed) ?? undefined
 }
 
-function isDraftValid(draft: ProviderDraft): boolean {
-	return Boolean(draft.name.trim() && draft.baseURL.trim() && draft.apiKey.trim() && draft.model.trim())
+/** A saved key is bound to its origin, so it carries over only while the URL keeps that origin. */
+function canKeepSavedKey(editing: IAIProviderConfig | null | undefined, baseURL: string): boolean {
+	if (!editing?.apiKeyMask) return false
+	const saved = canonicalOrigin(editing.baseURL)
+	return saved !== null && saved === canonicalOrigin(baseURL.trim())
+}
+
+function isDraftValid(draft: ProviderDraft, editing: IAIProviderConfig | null | undefined): boolean {
+	const hasKey = Boolean(draft.apiKey.trim()) || canKeepSavedKey(editing, draft.baseURL)
+	return Boolean(draft.name.trim() && draft.baseURL.trim() && hasKey && draft.model.trim())
 }
 
 export const ProviderForm: React.FC<IProviderFormProps> = ({
@@ -153,7 +163,8 @@ export const ProviderForm: React.FC<IProviderFormProps> = ({
 		setAdvancedOpen(false)
 	}, [open, editing])
 
-	const canSubmit = useMemo(() => isDraftValid(draft) && !submitting, [draft, submitting])
+	const canSubmit = useMemo(() => isDraftValid(draft, editing) && !submitting, [draft, editing, submitting])
+	const keepsSavedKey = canKeepSavedKey(editing, draft.baseURL)
 
 	const handleSubmit = useCallback(async () => {
 		if (!canSubmit) return
@@ -189,7 +200,6 @@ export const ProviderForm: React.FC<IProviderFormProps> = ({
 	const probeProvider = useMemo<IAIProviderConfig>(() => createProvider({
 		name: draft.name.trim() || 'probe',
 		baseURL: draft.baseURL.trim(),
-		apiKey: draft.apiKey.trim(),
 		model: draft.model.trim(),
 		authHeader: draft.authHeader.trim() || undefined,
 		authPrefix: draft.authPrefix || undefined,
@@ -262,6 +272,8 @@ export const ProviderForm: React.FC<IProviderFormProps> = ({
 					<ApiKeyField
 						value={draft.apiKey}
 						onChange={(apiKey) => setDraft((d) => ({ ...d, apiKey }))}
+						savedMask={keepsSavedKey ? editing?.apiKeyMask : undefined}
+						needsNewKey={Boolean(editing?.apiKeyMask) && !keepsSavedKey}
 					/>
 
 					<Form.Field required>
@@ -404,8 +416,13 @@ export const ProviderForm: React.FC<IProviderFormProps> = ({
 						</div>
 					) : null}
 
-					{isDraftValid(draft) ? (
-						<TestConnectionButton provider={probeProvider} isDark={isDark} />
+					{isDraftValid(draft, editing) ? (
+						<TestConnectionButton
+							provider={probeProvider}
+							apiKey={draft.apiKey.trim() || undefined}
+							providerId={editing?.id}
+							isDark={isDark}
+						/>
 					) : (
 						<div className={s.fieldHint}>{t.field_fillToTest}</div>
 					)}

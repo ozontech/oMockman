@@ -1,0 +1,72 @@
+$ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+.tabs {
+  position: relative;
+  overflow-x: clip;
+}
+
+.tabs > div > :global(.ui.secondary.pointing.menu) > :global(.active.item),
+.tabs > div > :global(.ui.secondary.pointing.menu) > :global(.active.item:hover) {
+  border-color: transparent;
+}
+
+.tabs > div > :global(.ui.secondary.pointing.menu) > :global(.item) {
+  transition: color 0.2s ease;
+}
+
+.aside {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  height: 2.6em;
+}
+
+.indicator {
+  position: absolute;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: #1b1c1d;
+  pointer-events: none;
+  transition:
+    transform 0.28s $ease,
+    width 0.28s $ease;
+}
+
+.dark .indicator {
+  background: #fff;
+}
+
+.tabs > div > :global(.tab.active) {
+  animation: pane-in-forward 0.24s $ease;
+}
+
+.back > div > :global(.tab.active) {
+  animation-name: pane-in-back;
+}
+
+@keyframes pane-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes pane-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+
+  .tabs > div > :global(.tab.active) {
+    animation: none;
+  }
+}

@@ -17,7 +17,9 @@ export const RequestSettingsRow: React.FC<{
 	onStatusInputChange: (raw: string, parsed?: number) => void
 	delay: IMockResponseRaw['delay']
 	onDelayChange: (val: IMockResponseRaw['delay']) => void
-}> = ({ isDark, method, onMethodChange, statusInput, onStatusInputChange, delay, onDelayChange }) => {
+	/** Set when the status is not mocked; the text says why. */
+	statusDisabledReason?: string
+}> = ({ isDark, method, onMethodChange, statusInput, onStatusInputChange, delay, onDelayChange, statusDisabledReason }) => {
 	return (
 		<Form.Group className={s.row}>
 			<MethodToggle
@@ -25,16 +27,16 @@ export const RequestSettingsRow: React.FC<{
 				onChange={onMethodChange}
 				isDark={isDark}
 			/>
-			<Form.Field className={s.fixed80}>
+			<Form.Field className={s.fixed80} title={statusDisabledReason}>
 				<Form.Input
 					className={['compact-number', isDark ? s.darkInput : ''].filter(Boolean).join(' ')}
-					required
+					required={!statusDisabledReason}
+					disabled={Boolean(statusDisabledReason)}
 					type="text"
 					inputMode="numeric"
 					pattern="[0-9]*"
 					label="Status"
 					placeholder="200"
-					name="status"
 					value={statusInput}
 					onChange={(e) => {
 						const raw = e.currentTarget?.value ?? ''
@@ -43,6 +45,7 @@ export const RequestSettingsRow: React.FC<{
 						onStatusInputChange(next, parsed)
 					}}
 					style={{ width: '100%' }}
+					data-testid="mock-status-input"
 				/>
 			</Form.Field>
 			<Form.Field className={s.fixed80}>
@@ -53,10 +56,10 @@ export const RequestSettingsRow: React.FC<{
 					pattern="[0-9]*"
 					label="Delay (ms)"
 					placeholder=""
-					name="delay"
 					value={delay ?? ''}
 					onChange={(_, data) => onDelayChange(parsePositiveIntFromInput(data.value))}
 					style={{ width: '100%' }}
+					data-testid="mock-delay-input"
 				/>
 			</Form.Field>
 		</Form.Group>

@@ -55,14 +55,14 @@ export const usePanelListener = (
 	}, [setMeta])
 
 	const handleLog = useCallback((log: ILog) => {
+		if (typeof log.time !== 'number') log.time = Date.now()
 		if (loggingEnabledRef.current) {
 			upsertLogRef.current(log)
 		}
-		if (log.response && !log.response.tooLarge && recordingRef.current) {
+		if (log.response && !log.response.tooLarge && !log.response.binary && recordingRef.current) {
 			recordingsRef.current.push({
 				...getMockFromLog(log),
 				id: genId(),
-				name: `Recorded ${new Date().toLocaleDateString()}`,
 			})
 		}
 	}, [])
