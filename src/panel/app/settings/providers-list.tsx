@@ -22,7 +22,7 @@ export const ProvidersList: React.FC<IProvidersListProps> = ({
 		<ul className={s.providersList}>
 			{providers.map((provider) => {
 				const isActive = provider.id === activeProviderId
-				const needsKey = !provider.apiKey.trim()
+				const needsKey = !provider.apiKeyMask
 				return (
 					<li key={provider.id} className={`${s.providerItem} ${isActive ? s.providerItemActive : ''}`} onClick={() => onSelectActive(provider.id)} style={{ cursor: 'pointer' }}>
 						<Radio
@@ -40,6 +40,7 @@ export const ProvidersList: React.FC<IProvidersListProps> = ({
 							</div>
 							<div className={s.providerMeta}>
 								<span className={s.providerModel}>{provider.model}</span>
+								{provider.apiKeyMask ? <span className={s.providerModel} data-testid="provider-key-mask"> · {provider.apiKeyMask}</span> : null}
 							</div>
 							{needsKey ? (
 								<div className={s.providerWarning}>

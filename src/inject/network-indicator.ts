@@ -58,15 +58,10 @@ class NetworkIndicator {
 	private readonly STORAGE_KEY = '__mockman_indicator_left__'
 	private readonly EDGE_MARGIN = 16
 
-	constructor() {
-		if (typeof window === 'undefined') return
-		this.lastLocationKey = this.getLocationKey()
-		this.installNavigationListeners()
-		// Bring the indicator back on screen when the window is resized.
-		window.addEventListener('resize', () => this.applyPosition())
-	}
+	private listening = false
 
 	addMockedRequest(url: string, method: string): void {
+		this.listen()
 		const normalizedMethod = method.toUpperCase()
 		const key = `${normalizedMethod}:${url}`
 		if (this.mockedKeys.has(key)) return
@@ -264,6 +259,18 @@ class NetworkIndicator {
 		this.mockedRequests = []
 		this.mockedKeys.clear()
 		this.render()
+	}
+
+	/**
+	 * Deferred to the first mocked request: a page that is never mocked keeps its own
+	 * history.pushState and gets no listeners from us.
+	 */
+	private listen(): void {
+		if (this.listening || typeof window === 'undefined') return
+		this.listening = true
+		this.lastLocationKey = this.getLocationKey()
+		this.installNavigationListeners()
+		window.addEventListener('resize', () => this.applyPosition())
 	}
 
 	private installNavigationListeners(): void {

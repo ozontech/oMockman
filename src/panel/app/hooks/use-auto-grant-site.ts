@@ -28,7 +28,7 @@ export function useAutoGrantSite(): void {
 
 		writing.current = origin
 		void persistStoreChange({
-			updatedStore: grantSitePermission(current, origin),
+			updatedStore: () => grantSitePermission(useChromeStore.getState().store, origin),
 			setStoreProperties,
 			tabId,
 			applyMocksNow: false,

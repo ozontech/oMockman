@@ -9,7 +9,7 @@ function makeProvider(overrides: Partial<IAIProviderConfig> = {}): IAIProviderCo
 		id: 'p-1',
 		name: 'Test',
 		baseURL: 'https://api.example.com/v1',
-		apiKey: 'sk-test',
+		apiKeyMask: 'sk-…test',
 		model: 'gpt-4o-mini',
 		createdOn: 1,
 		...overrides,

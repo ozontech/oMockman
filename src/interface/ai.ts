@@ -7,7 +7,8 @@ import type { OmitStrict } from '@/interface/utility'
 /**
  * Types for AI mock generation.
  * Works with any OpenAI-compatible API: public, corporate or local.
- * Keys live only in chrome.storage.local and are only ever sent to baseURL.
+ * Keys are kept by the service worker apart from the store (see background/secrets.ts) and are
+ * only ever sent to the origin they were entered for. The panel sees a mask of a key, not the key.
  */
 
 export type AIRoleType = 'system' | 'user' | 'assistant'
@@ -25,7 +26,8 @@ export interface IAIProviderConfig {
 	id: string
 	name: string
 	baseURL: string
-	apiKey: string
+	/** A mask of the saved key, e.g. `sk-…a1b2`; unset while no key is saved. */
+	apiKeyMask?: string
 	model: string
 	/** Defaults to 'Authorization'. Some gateways use 'x-api-key', 'api-key' etc. */
 	authHeader?: string
@@ -48,6 +50,9 @@ export interface IAIProviderConfig {
 	setupHint?: string
 	createdOn: number
 }
+
+/** What the service worker hands to the AI client: the config plus the key it keeps. */
+export type IAIProviderWithKey = IAIProviderConfig & { apiKey: string }
 
 export interface IAISettings {
 	enabled: boolean
@@ -110,6 +115,9 @@ export type AIChatResponse = IAIChatResponseOk | IAIChatResponseError
 
 export type AIGenerationMode = 'happy' | 'corner' | 'error'
 
+/** What the model writes: the mock response, or the request body sent to the server. */
+export type AIGenerationTarget = 'response' | 'request'
+
 export interface IBuildPromptInput {
 	mock: IMockResponseRaw
 	/** Generation mode: clean data / corner cases / error response. */
@@ -121,6 +129,8 @@ export interface IBuildPromptInput {
 	/** Global system prompt from the AI settings. */
 	globalSystemPrompt?: string
 	openApiOperation?: RecordLike
+	/** Defaults to the response. */
+	target?: AIGenerationTarget
 }
 
 export interface IOpenAIChatCompletionResponse {
@@ -157,6 +167,7 @@ export interface IUseAIGenerationInput {
 	store: IStore
 	values: IMockResponseRaw
 	openApiOperation?: RecordLike
+	target?: AIGenerationTarget
 	onResult: (response: string) => void
 }
 
@@ -179,6 +190,8 @@ export interface IBuildAddMockPanesAIOptions {
 	mode: AIGenerationMode
 	errorDisabled: boolean
 	errorReason: string
+	/** The request body gets its own mode descriptions. */
+	target?: AIGenerationTarget
 	onModeChange: (mode: AIGenerationMode) => void
 	onGenerate: () => void
 	onCancel: () => void
@@ -206,11 +219,14 @@ export type ProviderInput = OmitStrict<IAIProviderConfig, 'id' | 'createdOn'>
 export type ProviderPatch = Partial<ProviderInput>
 
 export type ProviderSubmitInput = Pick<IAIProviderConfig,
-	| 'name' | 'baseURL' | 'apiKey' | 'model'
+	| 'name' | 'baseURL' | 'model'
 	| 'authHeader' | 'authPrefix' | 'extraHeaders'
 	| 'temperature' | 'maxTokens' | 'supportsJsonMode' | 'supportsStreaming'
 	| 'allowLocalHttp' | 'setupHint'
->
+> & {
+	/** A key typed into the form; empty keeps the saved one. */
+	apiKey: string
+}
 
 export type ProviderDraft = {
 	name: string
@@ -263,6 +279,10 @@ export interface IImportPresetProps {
 export interface IApiKeyFieldProps {
 	value: string
 	onChange: (next: string) => void
+	/** Mask of the saved key: the field may then stay empty to keep it. */
+	savedMask?: string
+	/** The saved key belongs to another origin than the URL in the form. */
+	needsNewKey?: boolean
 }
 
 export interface ISetupHintProps {
@@ -277,6 +297,9 @@ export interface ISystemPromptSectionProps {
 
 export interface ITestConnectionButtonProps {
 	provider: IAIProviderConfig
+	/** A key typed into the form just now; without it the saved key of `providerId` is used. */
+	apiKey?: string
+	providerId?: string
 	disabled?: boolean
 	isDark?: boolean
 }

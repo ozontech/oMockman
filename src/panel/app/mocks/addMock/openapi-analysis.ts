@@ -12,6 +12,7 @@ import type {
 	RecordLike,
 } from '@/interface/openapi'
 import { normalizeUrl } from '@/services/url'
+import { SCHEMA_CHECK_MAX_CHARS } from '@/services/body-limits'
 
 const SUGGESTIONS_MAX_DURATION_MS = 60
 
@@ -115,16 +116,37 @@ export function getResponseSchema(operation: RecordLike, desiredStatus: number):
 	if (!isRecord(responseObj)) return undefined
 
 	if (isRecord(responseObj.content)) {
-		const content = responseObj.content
-		const jsonEntry =
-			content['application/json']
-			?? Object.entries(content).find(([mime]) => mime.endsWith('+json'))?.[1]
-			?? Object.values(content)[0]
-		if (isRecord(jsonEntry)) return jsonEntry.schema
+		const schema = pickJsonContentSchema(responseObj.content)
+		if (schema) return schema
 	}
 
 	if (responseObj.schema) return responseObj.schema
 
+	return undefined
+}
+
+function pickJsonContentSchema(content: RecordLike): unknown {
+	const jsonEntry =
+		content['application/json']
+		?? Object.entries(content).find(([mime]) => mime.endsWith('+json'))?.[1]
+		?? Object.values(content)[0]
+	return isRecord(jsonEntry) ? jsonEntry.schema : undefined
+}
+
+const derefObject = (spec: RecordLike, value: unknown): unknown =>
+	isRecord(value) && typeof value.$ref === 'string' ? getByPointer(spec, value.$ref) : value
+
+/** OpenAPI 3 keeps it in requestBody (maybe a $ref), Swagger 2 in the `in: body` parameter. */
+export function getRequestBodySchema(operation: RecordLike, spec: RecordLike): unknown {
+	const requestBody = derefObject(spec, operation.requestBody)
+	if (isRecord(requestBody) && isRecord(requestBody.content)) return pickJsonContentSchema(requestBody.content)
+
+	if (Array.isArray(operation.parameters)) {
+		const body = operation.parameters
+			.map((parameter) => derefObject(spec, parameter))
+			.find((parameter) => isRecord(parameter) && parameter.in === 'body')
+		if (isRecord(body)) return body.schema
+	}
 	return undefined
 }
 
@@ -475,13 +497,18 @@ export function isOpenApiSpec(spec: unknown): spec is RecordLike {
 	return typeof spec.openapi === 'string' || typeof spec.swagger === 'string' || isRecord(spec.info)
 }
 
+export type OpenApiBodyTarget = 'response' | 'request'
+
+/** Checks a mock body against the operation's schema: the response for `status`, or the request body. */
 export async function analyzeMockResponseByOpenApi(input: {
 	specUrl: string
 	requestUrl: string
 	method: string
 	status: number
 	responseBody: string
+	target?: OpenApiBodyTarget
 }): Promise<OpenApiValidationState> {
+	const target = input.target ?? 'response'
 	const specUrl = String(input.specUrl ?? '').trim()
 	if (!specUrl) return initialOpenApiValidationState
 
@@ -547,11 +574,15 @@ export async function analyzeMockResponseByOpenApi(input: {
 		}
 	}
 
-	const responseSchemaRaw = getResponseSchema(operation, input.status)
+	const responseSchemaRaw = target === 'request'
+		? getRequestBodySchema(operation, specResult.spec)
+		: getResponseSchema(operation, input.status)
 	if (!responseSchemaRaw) {
 		return {
 			status: 'error',
-			message: `Response schema for status ${input.status} is not defined in OpenAPI.`,
+			message: target === 'request'
+				? 'Request body schema is not defined in OpenAPI.'
+				: `Response schema for status ${input.status} is not defined in OpenAPI.`,
 			sourceUrl: specResult.sourceUrl,
 			issues: [],
 			suggestions: [],
@@ -561,11 +592,25 @@ export async function analyzeMockResponseByOpenApi(input: {
 	}
 
 	const resolvedSchema = resolveSchemaRefs(responseSchemaRaw, specResult.spec)
+	const bodyLength = String(input.responseBody ?? '').length
+	if (bodyLength > SCHEMA_CHECK_MAX_CHARS) {
+		return {
+			status: 'ready',
+			message: 'The body is too large to check against the schema.',
+			sourceUrl: specResult.sourceUrl,
+			issues: [],
+			suggestions: [],
+			enumHints: [],
+			suggestionsTruncated: false,
+			responseSchema: isRecord(resolvedSchema) ? resolvedSchema : undefined,
+			bodyCheckSkipped: bodyLength,
+		}
+	}
 	const parsedBody = parseResponseJson(input.responseBody)
 	if (!parsedBody.ok) {
 		return {
 			status: 'error',
-			message: `Response JSON is invalid: ${parsedBody.error}`,
+			message: `${target === 'request' ? 'Request' : 'Response'} JSON is invalid: ${parsedBody.error}`,
 			sourceUrl: specResult.sourceUrl,
 			issues: [],
 			suggestions: [],
@@ -598,7 +643,7 @@ export async function analyzeMockResponseByOpenApi(input: {
 
 	return {
 		status: 'ready',
-		message: issues.length > 0 ? 'Schema mismatches found.' : 'Response matches schema.',
+		message: issues.length > 0 ? 'Schema mismatches found.' : `${target === 'request' ? 'Request' : 'Response'} matches schema.`,
 		sourceUrl: specResult.sourceUrl,
 		issues,
 		suggestions,

@@ -117,9 +117,24 @@ describe('SiteAccessBanner', () => {
 		screen.getByTestId('site-access-banner-action').click()
 
 		await waitFor(() => expect(persistStoreChange).toHaveBeenCalledTimes(1))
-		const { updatedStore } = persistStoreChange.mock.calls[0][0] as unknown as { updatedStore: IStore }
-		expect(updatedStore.sitePermissions?.[ORIGIN]).toBeTruthy()
+		const { updatedStore } = persistStoreChange.mock.calls[0][0] as unknown as { updatedStore: () => IStore }
+		expect(updatedStore().sitePermissions?.[ORIGIN]).toBeTruthy()
 		await waitFor(() => expect(reload).toHaveBeenCalledWith(7))
+	})
+
+	it('reports a failed grant as a failure, not with the success text', async () => {
+		stubOrigin(ORIGIN)
+		useChromeStore.setState({ store: store(), urlMap: {}, dynamicUrlMap: {} })
+		persistStoreChange.mockImplementationOnce(() => Promise.reject(new Error('quota')))
+
+		render(<SiteAccessBanner />)
+		await waitFor(() => expect(screen.getByTestId('site-access-banner-action')).toBeTruthy())
+		screen.getByTestId('site-access-banner-action').click()
+
+		await waitFor(() => expect(toastApi.error).toHaveBeenCalledTimes(1))
+		expect(toastApi.error).toHaveBeenCalledWith(t.toast_storageWriteFailed('quota'))
+		expect(toastApi.success).not.toHaveBeenCalled()
+		expect(reload).not.toHaveBeenCalled()
 	})
 
 	it('opens settings on the Site access tab from the banner link', async () => {

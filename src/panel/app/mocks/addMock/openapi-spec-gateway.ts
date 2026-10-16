@@ -31,7 +31,38 @@ const runtimeSendMessage = <T>(message: unknown): Promise<T> => {
 	})
 }
 
-export async function fetchOpenApiSpecByRuntime(specUrl: string): Promise<IOpenApiFetchResult> {
+/**
+ * Validation reruns on every edit of the mock form, so a spec is fetched once per URL for a
+ * while. Only successes are kept: after a failure the next edit tries again.
+ */
+const SPEC_TTL_MS = 60_000
+const MAX_CACHED_SPECS = 10
+const specCache = new Map<string, { at: number; result: Promise<IOpenApiFetchResult> }>()
+
+export function clearOpenApiSpecCache(): void {
+	specCache.clear()
+}
+
+export function fetchOpenApiSpecByRuntime(specUrl: string): Promise<IOpenApiFetchResult> {
+	const now = Date.now()
+	const cached = specCache.get(specUrl)
+	if (cached && now - cached.at < SPEC_TTL_MS) return cached.result
+
+	const result = requestOpenApiSpec(specUrl)
+	specCache.delete(specUrl)
+	specCache.set(specUrl, { at: now, result })
+	while (specCache.size > MAX_CACHED_SPECS) {
+		const oldest = specCache.keys().next().value
+		if (oldest === undefined) break
+		specCache.delete(oldest)
+	}
+	void result.then((answer) => {
+		if (!answer.ok && specCache.get(specUrl)?.result === result) specCache.delete(specUrl)
+	})
+	return result
+}
+
+async function requestOpenApiSpec(specUrl: string): Promise<IOpenApiFetchResult> {
 	try {
 		const result = await runtimeSendMessage<IOpenApiFetchResult>({
 			type: 'PANEL_FETCH_OPENAPI_SPEC',

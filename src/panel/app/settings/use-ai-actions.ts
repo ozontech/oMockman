@@ -3,10 +3,13 @@ import { toast } from 'react-toastify'
 
 import { useChromeStore, useGlobalStore } from '../store'
 
+import type { IStore } from '@/interface/mock'
 import type { ProviderInput, ProviderPatch } from '@/interface/ai'
 import { describeSaveError, persistStoreChange } from '@/panel/app/service'
 import {
 	addAIProvider,
+	aiDeleteKey,
+	aiSetKey,
 	createProvider,
 	getAISettings,
 	removeAIProvider,
@@ -14,6 +17,19 @@ import {
 	setGlobalSystemPrompt,
 	updateAIProvider,
 } from '@/services/ai'
+import { canonicalOrigin } from '@/services/origin'
+
+const currentStore = (): IStore => useChromeStore.getState().store
+
+/** The key goes to the service worker, which keeps it; the panel gets back only its mask. */
+async function saveKey(providerId: string, apiKey: string, baseURL: string): Promise<string | undefined> {
+	const result = await aiSetKey(providerId, apiKey, baseURL)
+	if (!result.ok) {
+		toast.error(useGlobalStore.getState().t.toast_keySaveFailed(result.error))
+		throw new Error(result.error)
+	}
+	return result.mask
+}
 
 /**
  * Every AI settings action in one hook.
@@ -24,7 +40,7 @@ export function useAIActions() {
 	const tabId = useGlobalStore((s) => s.meta.tab?.id)
 
 	const persist = useCallback(
-		async (updatedStore: typeof store) => {
+		async (updatedStore: IStore | (() => IStore)) => {
 			try {
 				await persistStoreChange({
 					updatedStore,
@@ -35,7 +51,6 @@ export function useAIActions() {
 			} catch (error) {
 				const t = useGlobalStore.getState().t
 				toast.error(describeSaveError(error, t, t.toast_storageWriteFailed(error instanceof Error ? error.message : 'unknown error')))
-				// Rethrow so callers do not report success or move on.
 				throw error
 			}
 		},
@@ -43,46 +58,55 @@ export function useAIActions() {
 	)
 
 	const addProvider = useCallback(
-		async (input: ProviderInput) => {
+		async (input: ProviderInput, apiKey = '') => {
 			const provider = createProvider(input)
-			const next = addAIProvider(store, provider)
-			await persist(next)
-			return provider
+			const apiKeyMask = apiKey.trim() ? await saveKey(provider.id, apiKey, provider.baseURL) : undefined
+			const saved = { ...provider, apiKeyMask }
+			await persist(() => addAIProvider(currentStore(), saved))
+			return saved
 		},
-		[store, persist],
+		[persist],
 	)
 
+	/** An empty `apiKey` keeps the saved key, unless the server moved to another origin. */
 	const updateProvider = useCallback(
-		async (providerId: string, patch: ProviderPatch) => {
-			const next = updateAIProvider(store, providerId, patch)
-			await persist(next)
+		async (providerId: string, patch: ProviderPatch, apiKey = '') => {
+			const current = getAISettings(currentStore()).providers.find((p) => p.id === providerId)
+			const baseURL = patch.baseURL ?? current?.baseURL ?? ''
+			let apiKeyMask = current?.apiKeyMask
+			if (apiKey.trim()) {
+				apiKeyMask = await saveKey(providerId, apiKey, baseURL)
+			} else if (current && canonicalOrigin(current.baseURL) !== canonicalOrigin(baseURL)) {
+				await aiDeleteKey(providerId)
+				apiKeyMask = undefined
+			}
+			await persist(() => updateAIProvider(currentStore(), providerId, { ...patch, apiKeyMask }))
 		},
-		[store, persist],
+		[persist],
 	)
 
 	const removeProvider = useCallback(
 		async (providerId: string) => {
-			const next = removeAIProvider(store, providerId)
-			await persist(next)
+			await persist(() => removeAIProvider(currentStore(), providerId))
+			await aiDeleteKey(providerId)
 		},
-		[store, persist],
+		[persist],
 	)
 
 	const setActiveProvider = useCallback(
 		async (providerId: string | null) => {
 			const next = setActiveAIProvider(store, providerId)
 			if (next === store) return
-			await persist(next)
+			await persist(() => setActiveAIProvider(currentStore(), providerId))
 		},
 		[store, persist],
 	)
 
 	const setSystemPrompt = useCallback(
 		async (prompt: string | undefined) => {
-			const next = setGlobalSystemPrompt(store, prompt)
-			await persist(next)
+			await persist(() => setGlobalSystemPrompt(currentStore(), prompt))
 		},
-		[store, persist],
+		[persist],
 	)
 
 	const settings = getAISettings(store)

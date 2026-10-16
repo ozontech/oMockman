@@ -10,6 +10,10 @@ export type TableSchema<T> = Array<{
 	resizable?: boolean
 	minResizableWidth?: number
 	maxResizableWidth?: number
+	/** How narrow a resizable column may get to fit a narrow panel. Defaults to minResizableWidth. */
+	minFitWidth?: number
+	/** Stays at the right edge while the table scrolls sideways, e.g. the row actions. */
+	stickyEnd?: boolean
 	/**
 	 * Merges several columns into one cell (for example colSpan=2).
 	 */

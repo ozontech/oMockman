@@ -29,10 +29,8 @@ export const SiteAccessBanner: React.FC = () => {
 		if (!origin) return
 		setSaving(true)
 		try {
-			// Read at write time: the auto-grant hook may have written since this render, and a
-			// stale copy would undo it.
 			await persistStoreChange({
-				updatedStore: grantSitePermission(useChromeStore.getState().store, origin),
+				updatedStore: () => grantSitePermission(useChromeStore.getState().store, origin),
 				setStoreProperties,
 				tabId,
 				applyMocksNow: false,
@@ -46,7 +44,7 @@ export const SiteAccessBanner: React.FC = () => {
 				}
 			}
 		} catch (error) {
-			toast.error(describeSaveError(error, t, t.toast_siteAccessSaved(origin)))
+			toast.error(describeSaveError(error, t, t.toast_storageWriteFailed(error instanceof Error ? error.message : 'unknown error')))
 		} finally {
 			setSaving(false)
 		}
@@ -55,7 +53,6 @@ export const SiteAccessBanner: React.FC = () => {
 	const allowed = origin ? hasAnyPermission(store, origin) : false
 	const hidden = loading || !origin || allowed
 
-	// The banner unmounts the moment access is granted; the modal must not go with it.
 	if (hidden) {
 		return settingsOpen
 			? <SettingsModal open onClose={() => setSettingsOpen(false)} initialNav="sites" />

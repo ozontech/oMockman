@@ -166,7 +166,7 @@ export const ImportMockButton: React.FC = () => {
 				onClick={pickFile}
 			>
 				<Icon name="upload" />
-				{t.header_importMock}
+				<span className={s.btnLabel}>{t.header_importMock}</span>
 			</Button>
 
 			<Modal

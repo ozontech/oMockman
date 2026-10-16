@@ -121,14 +121,6 @@ describe('mock actions', () => {
 
 		expect(useChromeStore.getState().selectedMock?.id).toBe('m-1')
 	})
-
-	it('asks the content script to re-read the store', () => {
-		const { result } = renderHook(() => useMockActions())
-
-		act(() => result.current.refreshStore())
-
-		expect(notifyUpdateStore).toHaveBeenCalledWith(7)
-	})
 })
 
 describe('useGlobalMocksToggle', () => {

@@ -1,7 +1,8 @@
-import React, { isValidElement, cloneElement, useMemo, useRef, useState } from 'react'
+import React, { isValidElement, cloneElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Table, Button } from 'semantic-ui-react'
 import type { ReactNode, ReactElement } from 'react'
 
+import { fitColumnWidths, minTableWidth } from './fit-column-widths'
 import s from './table.module.scss'
 
 import type { TableWrapperProps } from '@/interface'
@@ -47,6 +48,19 @@ export const TableWrapper = <T extends { id: string | number }>({
 		[columnOrder, schema],
 	)
 
+	const [availableWidth, setAvailableWidth] = useState<number | null>(null)
+	useEffect(() => {
+		const el = wrapperRef.current
+		if (!el || typeof ResizeObserver === 'undefined') return
+		const observer = new ResizeObserver(([entry]) => setAvailableWidth(Math.floor(entry.contentRect.width)))
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [])
+	const displayedWidths = useMemo(
+		() => fitColumnWidths(orderedSchema, columnWidths, availableWidth == null ? null : availableWidth - orderedSchema.length - 1),
+		[orderedSchema, columnWidths, availableWidth],
+	)
+
 	const handleHeaderDragStart = () => {
 		if (!enableColumnReorder) return
 	}
@@ -90,8 +104,10 @@ export const TableWrapper = <T extends { id: string | number }>({
 				striped={striped}
 				selectable
 				compact
+				unstackable
 				inverted={inverted}
 				className={s.table}
+				style={{ minWidth: minTableWidth(orderedSchema, displayedWidths) }}
 			>
 				<Table.Header>
 					<Table.Row>
@@ -105,26 +121,28 @@ export const TableWrapper = <T extends { id: string | number }>({
 								resizable,
 								minResizableWidth,
 								maxResizableWidth,
+								stickyEnd,
 							} = column
 
-							const effectiveWidth =
-								typeof columnKey === 'string' && typeof columnWidths?.[columnKey] === 'number'
-									? columnWidths[columnKey]
-									: width
+							const effectiveWidth = displayedWidths[visibleIdx] ?? width
 
 							const canResize = Boolean(resizable && columnKey && onColumnWidthChange)
-							const safeMinWidth = minResizableWidth ?? minWidth ?? 120
+							// A column squeezed below its resize minimum must not jump when grabbed.
+							const safeMinWidth = Math.min(
+								minResizableWidth ?? minWidth ?? 120,
+								typeof effectiveWidth === 'number' ? effectiveWidth : Number.POSITIVE_INFINITY,
+							)
 							const safeMaxWidth = maxResizableWidth ?? maxWidth
 
 							return (
 								<Table.HeaderCell
 									key={columnOrder[visibleIdx]}
-									className={s.th}
+									className={stickyEnd ? `${s.th} ${s.stickyEnd}` : s.th}
 									style={{
 										minWidth,
 										maxWidth,
 										width: effectiveWidth,
-										zIndex: orderedSchema.length - visibleIdx + 1,
+										zIndex: stickyEnd ? orderedSchema.length + 2 : orderedSchema.length - visibleIdx + 1,
 									}}
 									draggable={false}
 									onDragStart={handleHeaderDragStart}
@@ -160,17 +178,18 @@ export const TableWrapper = <T extends { id: string | number }>({
 							<Table.Row
 								key={row.id}
 								active={selected}
+								data-testid="table-row"
 								className={`${s.row} ${extra}`.trim()}
 								{...rowHandlers}
 								{...rowAttrs}
 							>
-								{orderedSchema.map(({ content, colSpan, hidden, disableRowClick }, visibleIdx) => {
+								{orderedSchema.map(({ content, colSpan, hidden, disableRowClick, stickyEnd }, visibleIdx) => {
 									if (hidden?.(row)) return null
 									const span = colSpan?.(row)
 									return (
 										<Table.Cell
 											key={columnOrder[visibleIdx]}
-											className={s.cell}
+											className={stickyEnd ? `${s.cell} ${s.stickyEnd}` : s.cell}
 											colSpan={span}
 											onClick={disableRowClick ? undefined : () => onRowClick?.(row)}
 										>

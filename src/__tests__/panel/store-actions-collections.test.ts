@@ -3,13 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MethodEnum } from '../../interface'
 import {
 	applyCollectionMove,
-	applyCollectionOpenApiToMocks,
 	createCollection,
 	deleteCollectionDeep,
 	importCollectionBundle,
 	renameCollection,
 	setCollectionBranchActive,
-	updateCollectionOpenApiUrl,
 } from '../../panel/app/service'
 
 import { createEmptyCollectionTree } from '@/interface/collection'
@@ -108,57 +106,21 @@ describe('renameCollection', () => {
 	})
 })
 
-describe('updateCollectionOpenApiUrl', () => {
-	it('stores the url', () => {
-		const next = updateCollectionOpenApiUrl(makeTreeStore(), 'col-1', 'https://api.example.com/openapi.json')
-		expect(next.collectionTree.nodes['col-1'].openApiUrl).toBe('https://api.example.com/openapi.json')
-	})
-
-	it('clears the url when given an empty string', () => {
-		const withUrl = updateCollectionOpenApiUrl(makeTreeStore(), 'col-1', 'https://x/openapi.json')
-		const cleared = updateCollectionOpenApiUrl(withUrl, 'col-1', '')
-		expect(cleared.collectionTree.nodes['col-1'].openApiUrl).toBeUndefined()
-	})
-
-	it('is a no-op for an unknown collection', () => {
-		const store = makeTreeStore()
-		expect(updateCollectionOpenApiUrl(store, 'nope', 'https://x')).toBe(store)
-	})
-})
-
-describe('applyCollectionOpenApiToMocks', () => {
-	it('applies the url to the whole branch', () => {
-		const next = applyCollectionOpenApiToMocks(makeTreeStore(), 'col-1', 'https://x/openapi.json')
-
-		expect(next.mocks.find((m) => m.id === 'm-1')?.openApiUrl).toBe('https://x/openapi.json')
-		expect(next.mocks.find((m) => m.id === 'm-2')?.openApiUrl).toBe('https://x/openapi.json')
-		// A mock outside the branch is untouched.
-		expect(next.mocks.find((m) => m.id === 'm-3')?.openApiUrl).toBeUndefined()
-	})
-
-	it('clears the url with an empty string', () => {
-		const applied = applyCollectionOpenApiToMocks(makeTreeStore(), 'col-1', 'https://x/openapi.json')
-		const cleared = applyCollectionOpenApiToMocks(applied, 'col-1', '')
-		expect(cleared.mocks.find((m) => m.id === 'm-1')?.openApiUrl).toBeUndefined()
-	})
-})
-
 describe('setCollectionBranchActive', () => {
-	it('disables the branch and its mocks', () => {
+	it('disables the branch and turns off every mock in it', () => {
 		const next = setCollectionBranchActive(makeTreeStore(), 'col-1', false)
 
 		expect(next.collectionTree.nodes['col-1'].active).toBe(false)
 		expect(next.collectionTree.nodes['col-2'].active).toBe(false)
-		expect(next.mocks.find((m) => m.id === 'm-1')?.active).toBe(false)
-		expect(next.mocks.find((m) => m.id === 'm-2')?.active).toBe(false)
-		expect(next.mocks.find((m) => m.id === 'm-3')?.active).toBe(true)
+		expect(next.mocks.map((m) => [m.id, m.active])).toEqual([['m-1', false], ['m-2', false], ['m-3', true]])
 	})
 
-	it('re-enables the branch', () => {
-		const disabled = setCollectionBranchActive(makeTreeStore(), 'col-2', false)
-		const enabled = setCollectionBranchActive(disabled, 'col-2', true)
+	it('re-enables the branch and leaves its mocks off, to be turned on one by one', () => {
+		const enabled = setCollectionBranchActive(setCollectionBranchActive(makeTreeStore(), 'col-1', false), 'col-1', true)
+
+		expect(enabled.collectionTree.nodes['col-1'].active).toBe(true)
 		expect(enabled.collectionTree.nodes['col-2'].active).toBe(true)
-		expect(enabled.mocks.find((m) => m.id === 'm-2')?.active).toBe(true)
+		expect(enabled.mocks.map((m) => [m.id, m.active])).toEqual([['m-1', false], ['m-2', false], ['m-3', true]])
 	})
 
 	it('is a no-op for an unknown collection', () => {
@@ -286,6 +248,44 @@ describe('importCollectionBundle', () => {
 		expect(next.totalMocksCreated).toBe(1)
 		expect(next.collectionTree.nodes['imported-col'].name).toBe('Imported')
 		expect(next.collectionTree.root).toContainEqual({ id: 'imported-col', type: 'collection' })
+	})
+
+	it('brings the scenario along and points its rules at the renamed mocks', () => {
+		const store = makeTreeStore()
+		const withScenario = bundle({
+			mocks: [makeMock({ id: 'm-1', collectionId: 'imported-col' })],
+			collectionTree: {
+				root: [{ id: 'imported-col', type: 'collection' }],
+				nodes: {
+					'imported-col': {
+						id: 'imported-col',
+						name: 'Imported',
+						parentId: null,
+						active: true,
+						createdOn: 1,
+						entries: [{ id: 'm-1', type: 'mock' }],
+						scenario: {
+							enabled: true,
+							rules: [
+								{ id: 'r1', method: 'GET', url: '/a', respond: { mockId: 'm-1' } },
+								{ id: 'r2', method: 'GET', url: '/b', respond: { mockId: 'not-in-bundle' } },
+								{ id: 'r3', method: 'POST', url: '/c', respond: { network: true } },
+							],
+						},
+					},
+				},
+			},
+		})
+
+		const next = importCollectionBundle(store, withScenario)
+
+		const imported = Object.values(next.collectionTree.nodes).find((node) => node.name === 'Imported')
+		const renamed = next.mocks.find((m) => m.collectionId === imported?.id)
+		expect(renamed?.id).not.toBe('m-1')
+		expect(imported?.scenario?.rules).toEqual([
+			{ id: 'r1', method: 'GET', url: '/a', respond: { mockId: renamed?.id } },
+			{ id: 'r3', method: 'POST', url: '/c', respond: { network: true } },
+		])
 	})
 
 	it('keeps existing entries', () => {

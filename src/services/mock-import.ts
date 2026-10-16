@@ -1,10 +1,18 @@
 import { safeNumberInt } from '@/services/number'
 import { buildMockPayload } from '@/panel/app/mocks/addMock/utils'
 import type { IMockResponse, IMockResponseRaw } from '@/interface/mock'
-import type { ICollectionEntry, ICollectionNode, ICollectionTree } from '@/interface/collection'
+import type {
+	ICollectionEntry,
+	ICollectionNode,
+	ICollectionScenario,
+	ICollectionTree,
+	IScenarioRule,
+} from '@/interface/collection'
 import { MethodEnum } from '@/interface/network'
 import { genId } from '@/services/helper'
 import { MAX_BODY_BYTES, utf8ByteLength } from '@/services/body-limits'
+import { coerceRequestPatch } from '@/services/request-patch'
+import { coerceMockApply } from '@/services/mock-apply'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null
@@ -51,6 +59,8 @@ export function coerceToRawMock(input: unknown): IMockResponseRaw | undefined {
 				: (input as Record<string, unknown>).collectionId === null
 					? null
 					: undefined,
+		requestPatch: coerceRequestPatch(input.requestPatch),
+		apply: coerceMockApply(input.apply),
 	}
 }
 
@@ -103,6 +113,28 @@ function coerceEntry(entry: unknown): ICollectionEntry | null {
 	return { id, type }
 }
 
+function coerceScenarioRule(raw: unknown): IScenarioRule | null {
+	if (!isRecord(raw) || typeof raw.method !== 'string' || typeof raw.url !== 'string') return null
+	const respondRaw = raw.respond
+	let respond: IScenarioRule['respond']
+	if (isRecord(respondRaw) && respondRaw.network === true) respond = { network: true }
+	else if (isRecord(respondRaw) && typeof respondRaw.mockId === 'string') respond = { mockId: respondRaw.mockId }
+	else return null
+	return {
+		id: typeof raw.id === 'string' && raw.id ? raw.id : genId(),
+		method: raw.method.toUpperCase(),
+		url: raw.url,
+		respond,
+	}
+}
+
+/** Keeps the well-formed rules of an imported scenario. */
+export function coerceScenario(raw: unknown): ICollectionScenario | undefined {
+	if (!isRecord(raw) || !Array.isArray(raw.rules)) return undefined
+	const rules = raw.rules.map(coerceScenarioRule).filter(Boolean) as IScenarioRule[]
+	return { enabled: raw.enabled === true, rules }
+}
+
 function coerceNode(node: unknown, fallbackId?: string): ICollectionNode | null {
 	if (!isRecord(node)) return null
 	const id = typeof node.id === 'string' && node.id.trim() ? node.id : fallbackId
@@ -120,6 +152,8 @@ function coerceNode(node: unknown, fallbackId?: string): ICollectionNode | null 
 		active: node.active !== false,
 		createdOn: typeof node.createdOn === 'number' ? node.createdOn : Date.now(),
 		description,
+		aiPrompt: typeof node.aiPrompt === 'string' && node.aiPrompt ? node.aiPrompt : undefined,
+		scenario: coerceScenario(node.scenario),
 		entries,
 	}
 }

@@ -23,7 +23,7 @@ const provider: IAIProviderConfig = {
 	id: 'p1',
 	name: 'Test',
 	baseURL: 'https://example.test',
-	apiKey: 'key',
+	apiKeyMask: 'sk-…key0',
 	model: 'm',
 	createdOn: 0,
 }

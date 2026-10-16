@@ -26,7 +26,10 @@ const runtimeSendMessage = <T, >(message: unknown): Promise<T> => {
 	if (!ext?.runtime?.sendMessage) return Promise.reject(new Error('runtime.sendMessage is not available'))
 	const fn = ext.runtime.sendMessage as unknown as ((...args: unknown[]) => unknown)
 	if (ext.runtime.sendMessage.length >= 2) {
-		return new Promise((resolve) => fn(message, resolve))
+		return new Promise((resolve) => fn(message, (res: unknown) => {
+			void ext?.runtime?.lastError
+			resolve(res as T)
+		}))
 	}
 
 	return Promise.resolve(fn(message) as T)
@@ -38,7 +41,10 @@ const queryTabs = async (queryInfo: chrome.tabs.QueryInfo): Promise<chrome.tabs.
 			const fn = ext.tabs.query as unknown as ((...args: unknown[]) => unknown)
 
 			if (ext.tabs.query.length >= 2) {
-				return await new Promise((resolve) => fn(queryInfo, resolve))
+				return await new Promise((resolve) => fn(queryInfo, (tabs: unknown) => {
+					void ext?.runtime?.lastError
+					resolve((tabs as chrome.tabs.Tab[]) ?? [])
+				}))
 			}
 
 			return (await Promise.resolve(fn(queryInfo))) as unknown as chrome.tabs.Tab[]
@@ -61,7 +67,10 @@ const getTab = (tabId: number): Promise<chrome.tabs.Tab> => {
 			const fn = ext.tabs.get as unknown as ((...args: unknown[]) => unknown)
 
 			if (ext.tabs.get.length >= 2) {
-				return new Promise((resolve) => fn(tabId, resolve))
+				return new Promise((resolve) => fn(tabId, (tab: unknown) => {
+					void ext?.runtime?.lastError
+					resolve(tab as chrome.tabs.Tab)
+				}))
 			}
 
 			return Promise.resolve(fn(tabId) as unknown as chrome.tabs.Tab)

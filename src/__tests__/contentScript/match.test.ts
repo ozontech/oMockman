@@ -447,6 +447,15 @@ describe('markMockedInLog', () => {
 		expect(entry.mockPath).toBe('mocks.0')
 	})
 
+	it('links a patched request to its rule without calling it mocked', () => {
+		const entry = { ...log(false), isPatched: true } as ILog
+
+		markMockedInLog(entry, state)
+
+		expect(entry.isMocked).toBe(false)
+		expect(entry.mockPath).toBe('mocks.0')
+	})
+
 	it('does not call a request mocked just because a mock matches it', () => {
 		// The regression: the request left before the bridge was up, so the real response came
 		// back, yet a matching mock made the log say "mocked".

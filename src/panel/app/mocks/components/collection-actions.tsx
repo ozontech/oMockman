@@ -77,12 +77,13 @@ export const CollectionActions: React.FC<CollectionActionsProps> = ({
 						icon
 						basic
 						color="blue"
-						title={t.col_editOpenApi}
+						title={t.col_settings}
 						onClick={(e) => {
 							e.stopPropagation()
 							onSettings(collectionId)
 						}}
 						style={{ margin: '0 1px' }}
+						data-testid="collection-settings-button"
 					>
 						<Icon name="cog" />
 					</Button>

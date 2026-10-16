@@ -100,3 +100,13 @@
   padding-bottom: 2px !important;
 }
 
+
+.bodyCaption {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b06d00;
+}
+:global(body.dark) .bodyCaption {
+  color: #f2c94c;
+}

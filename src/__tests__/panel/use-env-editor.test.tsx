@@ -51,6 +51,33 @@ describe('useEnvEditor', () => {
 		expect(result.current.envOptions).toEqual([{ key: 'default', value: 'default', text: 'default' }])
 	})
 
+	it('keeps the draft when an unrelated part of the store is written', () => {
+		const { result } = renderHook(() => useEnvEditor())
+		act(() => result.current.renameProfile('staging'))
+
+		// E.g. auto-grant records the site while the settings modal is open.
+		act(() => {
+			useChromeStore.setState({ store: { ...baseStore(), sitePermissions: { 'https://a.example.com': { all: true } } } as unknown as IStore })
+		})
+
+		expect(result.current.currentProfile?.name).toBe('staging')
+	})
+
+	it('picks up a saved env change', () => {
+		const { result } = renderHook(() => useEnvEditor())
+
+		act(() => {
+			useChromeStore.setState({
+				store: {
+					...baseStore(),
+					env: { activeId: 'default', profiles: [{ id: 'default', name: 'prod', vars: {} }] },
+				} as unknown as IStore,
+			})
+		})
+
+		expect(result.current.currentProfile?.name).toBe('prod')
+	})
+
 	it('adds a profile and switches to it', () => {
 		const { result } = renderHook(() => useEnvEditor())
 

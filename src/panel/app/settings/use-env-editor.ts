@@ -49,14 +49,16 @@ export function useEnvEditor(): EnvEditor {
 	const [draft, setDraft] = useState<Env | null>(null)
 	const [varsRows, setVarsRows] = useState<VarRow[]>([])
 	const [saved, setSaved] = useState(false)
+	const savedEnv = useMemo(() => (normalizeEnv(store as IStore).env ?? null) as Env | null, [store])
+	const savedEnvKey = JSON.stringify(savedEnv)
 
 	useEffect(() => {
-		const env = (normalizeEnv(store as IStore).env ?? null) as Env | null
+		const env = JSON.parse(savedEnvKey) as Env | null
 		setDraft(env)
 		const current = env?.profiles.find((p) => p.id === env.activeId) ?? env?.profiles[0]
 		setVarsRows(toVarRows(current?.vars ?? {}))
 		setSaved(false)
-	}, [store])
+	}, [savedEnvKey])
 
 	const currentProfile = useMemo<EnvProfile | null>(() => {
 		if (!draft) return null

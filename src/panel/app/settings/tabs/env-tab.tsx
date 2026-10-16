@@ -65,7 +65,7 @@ export const EnvTab: React.FC<SettingsTabProps> = ({ isDark }) => {
 							<label className={labelClass}>{t.env_varsLabel}</label>
 
 							{env.varsRows.map((row) => (
-								<div key={row.id} className={sm.varRow}>
+								<div key={row.id} className={sm.varRow} data-testid="env-var-row">
 									<Input
 										className={sm.varKeyInput}
 										value={row.key}
@@ -86,6 +86,7 @@ export const EnvTab: React.FC<SettingsTabProps> = ({ isDark }) => {
 										size="mini"
 										onClick={() => env.removeVar(row.id)}
 										title={t.env_removeVar}
+										data-testid="env-var-delete-button"
 									>
 										<Icon name="close" />
 									</Button>
@@ -93,7 +94,7 @@ export const EnvTab: React.FC<SettingsTabProps> = ({ isDark }) => {
 
 							))}
 
-							<Button type="button" basic inverted={isDark} size="mini" onClick={env.addVar}>
+							<Button type="button" basic inverted={isDark} size="mini" onClick={env.addVar} data-testid="env-add-var-button">
 								<Icon name="add" /> {t.env_addVar}
 							</Button>
 						</Form.Field>

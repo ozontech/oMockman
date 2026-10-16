@@ -30,7 +30,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Mocks tab screenshot (light theme, no mocks)', async () => {
 		await allure.story('Mocks - screenshots')
 		const extensionId = await initExtension.installExtension()
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('light')
 
@@ -43,7 +43,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Mocks tab screenshot (dark theme, no mocks)', async () => {
 		await allure.story('Mocks - screenshots')
 		const extensionId = await initExtension.installExtension()
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('dark')
 
@@ -56,7 +56,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Logs tab screenshot (light theme, empty)', async () => {
 		await allure.story('Logs - screenshots')
 		const extensionId = await initExtension.installExtension()
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('light')
 		await page.clickLogsTab()
@@ -70,7 +70,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Logs tab screenshot (dark theme, empty)', async () => {
 		await allure.story('Logs - screenshots')
 		const extensionId = await initExtension.installExtension()
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('dark')
 		await page.clickLogsTab()
@@ -84,7 +84,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Mocks tab screenshot (light theme, with mocks)', async () => {
 		await allure.story('Mocks - screenshots')
 		const extensionId = await initExtension.installExtension(true)
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('light')
 
@@ -99,7 +99,7 @@ test.describe('Mockman Extension Panel', { tag: '@extension' }, () => {
 	test('Mocks tab screenshot (dark theme, with mocks)', async () => {
 		await allure.story('Mocks - screenshots')
 		const extensionId = await initExtension.installExtension(true)
-		const page = await ExtensionPage.create(initExtension.context!, extensionId)
+		const page = await ExtensionPage.create(initExtension.getContext(), extensionId)
 		await page.go()
 		await page.setTheme('dark')
 

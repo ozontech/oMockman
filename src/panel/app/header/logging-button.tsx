@@ -24,6 +24,7 @@ export const LoggingButton: React.FC = () => {
 			aria-pressed={loggingEnabled}
 			aria-label={label}
 			onClick={toggleLogging}
+			data-testid="logging-button"
 		>
 			<Icon name={loggingEnabled ? 'pause' : 'play'} style={{ margin: 0, lineHeight: 1 }} />
 		</Button>

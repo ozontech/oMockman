@@ -31,6 +31,7 @@ export const MockActions: React.FC<MockActionsProps> = ({ mock, isDark, onEdit, 
 				title={t.mock_edit(mock.name)}
 				onClick={(e) => { e.stopPropagation(); onEdit(mock) }}
 				style={{ marginRight: '2px' }}
+				data-testid="mock-edit-button"
 			>
 				<Icon name="edit" />
 			</Button>
@@ -51,6 +52,7 @@ export const MockActions: React.FC<MockActionsProps> = ({ mock, isDark, onEdit, 
 				title={t.mock_duplicate(mock.name)}
 				onClick={(e) => { e.stopPropagation(); onDuplicate(mock) }}
 				style={{ margin: '0 1px' }}
+				data-testid="mock-duplicate-button"
 			>
 				<Icon name="copy" />
 			</Button>
@@ -61,6 +63,7 @@ export const MockActions: React.FC<MockActionsProps> = ({ mock, isDark, onEdit, 
 				title={t.mock_delete(mock.name)}
 				onClick={(e) => { e.stopPropagation(); onDelete(mock) }}
 				style={{ marginLeft: '2px' }}
+				data-testid="mock-delete-button"
 			>
 				<Icon name="trash" />
 			</Button>

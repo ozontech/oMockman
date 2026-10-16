@@ -49,5 +49,26 @@ export function buildLog(
 		},
 		response,
 		isMocked: mocked,
+		time: Date.now(),
 	}
+}
+export interface LogPatch {
+	/** What the page sent, when the body was replaced. */
+	originalBody?: { text: string; tooLarge: boolean }
+	headers?: boolean
+}
+
+/** Marks a log whose request went to the network changed by a mock. */
+export function markPatchedRequest(message: unknown, patch: LogPatch): void {
+	const log = message as {
+		isPatched?: boolean
+		headersPatched?: boolean
+		requestPatched?: boolean
+		request?: Record<string, unknown>
+	} | undefined
+	if (!log?.request) return
+	log.isPatched = true
+	if (patch.headers) log.headersPatched = true
+	if (patch.originalBody) log.requestPatched = true
+	if (patch.originalBody && !patch.originalBody.tooLarge) log.request.originalBody = patch.originalBody.text
 }

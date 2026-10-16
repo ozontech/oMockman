@@ -129,6 +129,7 @@ export function createToggleColumn(params: CreateMocksTableSchemaParams): TableS
 								actions.toggleMock({ ...row.mock, active: !!data.checked })
 							}
 							className={s.smallToggle}
+							data-testid={`mock-toggle-${row.mock.id}`}
 						/>
 					) : null}
 				</div>

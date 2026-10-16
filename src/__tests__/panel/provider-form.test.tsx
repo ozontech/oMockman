@@ -32,7 +32,7 @@ const provider = (overrides: Partial<IAIProviderConfig> = {}): IAIProviderConfig
 	id: 'p-1',
 	name: 'gateway',
 	baseURL: 'https://llm.example.com/api',
-	apiKey: 'sk-existing',
+	apiKeyMask: 'sk-…ting',
 	model: 'model-a',
 	createdOn: 1,
 	...overrides,
@@ -110,6 +110,43 @@ describe('ProviderForm', () => {
 		fireEvent.click(screen.getByText(t.field_advanced))
 		expect(screen.getByTestId('provider-allow-local-http').querySelector('input')).toBeChecked()
 		expect(screen.getByPlaceholderText('Authorization')).toHaveValue('x-api-key')
+	})
+
+	it('never puts the saved key into the field, only its mask into the placeholder', () => {
+		renderForm(provider())
+
+		const input = screen.getByTestId('api-key-input')
+		expect(input).toHaveValue('')
+		expect(input).toHaveAttribute('placeholder', t.apiKey_keepPlaceholder('sk-…ting'))
+	})
+
+	it('keeps the saved key when the field is left empty', async () => {
+		renderForm(provider())
+
+		fireEvent.click(screen.getByRole('button', { name: t.ai_save }))
+
+		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+		expect(onSubmit.mock.calls[0][0].apiKey).toBe('')
+	})
+
+	it('asks for the key again once the server moves to another origin', () => {
+		renderForm(provider())
+
+		fill(t.field_serverUrl_placeholder, 'https://other.example.com/api')
+
+		expect(screen.getByRole('button', { name: t.ai_save })).toBeDisabled()
+		expect(screen.getByText(t.field_apiKey_rebind)).toBeInTheDocument()
+
+		fireEvent.change(screen.getByTestId('api-key-input'), { target: { value: 'sk-new' } })
+		expect(screen.getByRole('button', { name: t.ai_save })).toBeEnabled()
+	})
+
+	it('keeps the saved key for another path on the same origin', () => {
+		renderForm(provider())
+
+		fill(t.field_serverUrl_placeholder, 'https://llm.example.com/v2')
+
+		expect(screen.getByRole('button', { name: t.ai_save })).toBeEnabled()
 	})
 
 	it('keeps extra headers editable', async () => {

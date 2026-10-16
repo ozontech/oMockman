@@ -65,7 +65,7 @@ export const UrlTemplateInput: React.FC<{
 				hoverable
 				inverted={isDark}
 				content={(
-					<div className={s.tooltipContent}>
+					<div className={s.tooltipContent} data-testid="url-tooltip">
 						<div className={s.tooltipTitle}>{t.mock_resolvedUrl}</div>
 						<div className={s.tooltipUrl}>{resolvedUrl}</div>
 					</div>
@@ -120,6 +120,7 @@ export const UrlTemplateInput: React.FC<{
 							onScroll={(e) => setScrollLeft(e.currentTarget?.scrollLeft ?? 0)}
 							className={`${s.input} ${isDark ? s.inputDark : s.inputLight}`}
 							title={hasTemplates ? resolvedUrl : undefined}
+							data-testid="mock-url-input"
 						/>
 					</div>
 				)}

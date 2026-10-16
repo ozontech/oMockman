@@ -2,7 +2,6 @@
  * Shared helpers for the injected wrappers.
  */
 export type HeadersMap = Record<string, string>
-export type XhrEventHandler = (this: XMLHttpRequest, ev: Event) => unknown
 
 export const BLOCKED_HEADERS = new Set<string>([
 	'content-encoding',
@@ -21,11 +20,6 @@ export function buildHeadersMap(list?: Array<{ name?: string; value?: string }>)
 	}, {})
 }
 
-export function scheduleComplete(delayMs: number, cb: () => void): void {
-	if (delayMs > 0) setTimeout(cb, delayMs)
-	else queueMicrotask(cb)
-}
-
 export function parseAllResponseHeaders(raw: string): Array<{ name: string; value: string }> {
 	if (!raw || !raw.trim()) return []
 	return raw
@@ -36,16 +30,4 @@ export function parseAllResponseHeaders(raw: string): Array<{ name: string; valu
 			if (idx === -1) return { name: line, value: '' }
 			return { name: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() }
 		})
-}
-
-export function safeCall(
-	handler: XhrEventHandler | null | undefined,
-	thisArg: XMLHttpRequest,
-	ev: Event,
-): void {
-	try {
-		if (handler) handler.call(thisArg, ev)
-	} catch {
-		void 0
-	}
 }

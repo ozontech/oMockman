@@ -63,6 +63,7 @@ describe('trusted origin source', () => {
 		vi.stubGlobal('chrome', {
 			runtime: {
 				id: 'test-extension-id',
+				getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
 				onConnect: { addListener: vi.fn() },
 				onMessage: { addListener: (cb: Listener) => messageRouters.push(cb) },
 				lastError: undefined,

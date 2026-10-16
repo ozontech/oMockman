@@ -355,3 +355,30 @@ body>*:first-child {
 .ui.dimmer.mm-modal-dimmer.mm-modal-leave {
   animation: mmDimmerOut 180ms ease forwards;
 }
+
+body.dark .ui.popup {
+  color: var(--text);
+  background: #2c2c2c;
+  border-color: #444;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
+}
+
+body.dark .ui.popup::before {
+  background: #2c2c2c;
+}
+
+body.dark .ui.top.popup::before {
+  box-shadow: 1px 1px 0 0 #444;
+}
+
+body.dark .ui.bottom.popup::before {
+  box-shadow: -1px -1px 0 0 #444;
+}
+
+body.dark .ui.left.center.popup::before {
+  box-shadow: 1px -1px 0 0 #444;
+}
+
+body.dark .ui.right.center.popup::before {
+  box-shadow: -1px 1px 0 0 #444;
+}

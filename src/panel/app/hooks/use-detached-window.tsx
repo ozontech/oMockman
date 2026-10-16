@@ -2,6 +2,9 @@ import type React from 'react'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 
+/** The body classes the theme lives in; everything else on the panel's body is its own business. */
+const THEME_BODY_CLASSES = ['dark', 'mm-theme-anim']
+
 interface Options {
 	title: string
 	width?: number
@@ -76,7 +79,9 @@ export function useDetachedWindow(options: Options): {
 				syncStyles()
 				const syncTheme = () => {
 					doc.documentElement.className = document.documentElement.className
-					doc.body.className = document.body.className
+					for (const name of THEME_BODY_CLASSES) {
+						doc.body.classList.toggle(name, document.body.classList.contains(name))
+					}
 				}
 				syncTheme()
 

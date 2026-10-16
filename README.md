@@ -19,8 +19,8 @@
 <p align="center"><b>English</b> | <a href="README.ru.md">Русский</a></p>
 
 A browser DevTools extension that intercepts `fetch` and `XMLHttpRequest` in the
-page and replaces responses with your own — no proxy, no changes to the
-application under test, no rebuild.
+page and replaces responses — and request bodies on their way to the server —
+with your own: no proxy, no changes to the application under test, no rebuild.
 
 oMockman adds a **Mockman** tab to DevTools with two views: **Mocks** (rules that
 replace responses) and **Logs** (every request the page makes, one click away
@@ -29,9 +29,13 @@ from becoming a mock).
 - Chrome / Chromium (Manifest V3) and Firefox (Manifest V2)
 - Mock by `METHOD + URL`, including dynamic paths (`/users/:id`, `(.*)`)
 - Status, body, headers and an artificial delay per mock
+- Request-body mocking: the page sends its request, the server receives the body from the mock, and the page gets the real response
+- Mock headers laid over the real response, leaving its body and status alone
+- Sending a request from the panel: repeat one from Logs or try out a mock's request body, with the page's cookies
+- A collection scenario that answers one endpoint call after call: the first call gets one mock, the next one another
 - Collections, import/export, environment variables in URLs (`{BASE_URL}/api`)
-- Response validation against an OpenAPI schema
-- Optional AI generation of response bodies through any OpenAI-compatible endpoint you configure
+- Response and request bodies validated against an OpenAPI schema
+- Optional AI generation of response and request bodies through any OpenAI-compatible endpoint you configure
 
 <p align="center">
   <img src="docs/assets/demo.gif" width="900" alt="oMockman demo: record requests from Logs, fix a banner against the OpenAPI schema, generate happy and corner-case products with AI">
@@ -49,10 +53,11 @@ only the basic case of swapping one response.
 oMockman covers the whole mocking workflow inside DevTools:
 
 - **Lives next to the Network tab.** No extra windows or proxies; a logged request becomes a mock in one click.
+- **Mocks both directions.** Serve the page your response, or send your request body to the server and get the real answer.
 - **Postman-style collections.** Folders and subfolders, with a whole group switched on or off at once.
 - **JSON import and export.** Hand a set of mocks to another team with its folder structure intact.
 - **OpenAPI validation.** A mock body is checked against the Swagger schema, and contract mismatches are highlighted in the editor.
-- **AI-generated responses.** Plausible data, edge cases or a schema-shaped error through any OpenAI-compatible API.
+- **AI-generated bodies.** Plausible data, edge cases or a schema-shaped error — for responses and requests — through any OpenAI-compatible API.
 - **JSON editor** with format errors highlighted and one-click formatting.
 - **Chrome and Firefox** from one codebase.
 
@@ -333,7 +338,9 @@ sources* in Settings.
 - WebSocket and Server-Sent Events are not intercepted.
 - Opaque (`no-cors`) responses are logged without a body.
 - Synchronous XHR is never mocked (see above).
+- Request bodies are replaced only for `fetch` and asynchronous XHR, and never for GET/HEAD; `navigator.sendBeacon`, `<form>` submissions and worker requests go out untouched.
 - Request and response bodies over 20 MB are not captured in logs or mocks.
+- Logs keep the latest 300 requests.
 - A failed save to extension storage is reported with the browser's reason instead of being lost silently.
 
 ---

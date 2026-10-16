@@ -7,19 +7,22 @@ import s from './settings.module.scss'
 
 import type { IApiKeyFieldProps } from '@/interface/ai'
 
-export const ApiKeyField: React.FC<IApiKeyFieldProps> = ({ value, onChange }) => {
+/** Takes a new key only: a saved key is never shown, just its mask in the placeholder. */
+export const ApiKeyField: React.FC<IApiKeyFieldProps> = ({ value, onChange, savedMask, needsNewKey }) => {
 	const t = useGlobalStore((s) => s.t)
 	return (
-		<Form.Field required>
+		<Form.Field required={!savedMask}>
 			<label>{t.field_apiKey}</label>
 			<input
 				type="password"
+				autoComplete="off"
 				value={value}
 				onChange={(e) => onChange(e.currentTarget.value)}
-				placeholder={t.apiKey_placeholder}
+				placeholder={savedMask ? t.apiKey_keepPlaceholder(savedMask) : t.apiKey_placeholder}
 				className={s.apiKeyInput}
+				data-testid="api-key-input"
 			/>
-			<div className={s.fieldHint}>{t.field_apiKey_hint}</div>
+			<div className={s.fieldHint}>{needsNewKey ? t.field_apiKey_rebind : t.field_apiKey_hint}</div>
 		</Form.Field>
 	)
 }

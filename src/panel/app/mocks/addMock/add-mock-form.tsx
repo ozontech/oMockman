@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { Button, Form, Segment, Tab, Icon } from 'semantic-ui-react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Form, Segment, Icon } from 'semantic-ui-react'
 
 import { useGlobalStore } from '../../store'
 import type { useChromeStoreState } from '../../store'
@@ -19,11 +19,14 @@ import { isJsonValid } from '@/services/json'
 import { getActiveEnvVars } from '@/services/env'
 import { UrlTemplateInput } from '@/panel/app/mocks/addMock/url-template-input'
 import { OpenApiUrlField } from '@/panel/app/mocks/addMock/openapi-url-field'
-import { buildAddMockPanes } from '@/panel/app/mocks/addMock/add-mock-panes'
+import { APPLY_TAB_INDEX, buildAddMockPanes } from '@/panel/app/mocks/addMock/add-mock-panes'
 import { RequestSettingsRow } from '@/panel/app/mocks/addMock/request-settings-row'
 import { submitMock } from '@/panel/app/mocks/addMock/submit-mock'
+import { AnimatedTabs } from '@/panel/app/common/animated-tabs'
 import type { AIGenerationMode } from '@/interface/ai'
 import { getAISettings } from '@/services/ai'
+import { formatBytes, SCHEMA_CHECK_MAX_CHARS } from '@/services/body-limits'
+import { appliesAnything, resolveMockApply } from '@/services/mock-apply'
 
 export const AddMockForm: React.FC<
 	Pick<
@@ -43,6 +46,17 @@ export const AddMockForm: React.FC<
 	const [openApiBaseValue, setOpenApiBaseValue] = useState<string | null>(null)
 	const openApiInputRef = useRef<HTMLInputElement>(null)
 
+	const mockingEnabled = store.active
+	const responseEditorRef = React.useRef<AutoResizeCodeMirrorHandle>(null as unknown as AutoResizeCodeMirrorHandle)
+
+	const {
+		values,
+		setValues,
+		statusInput,
+		setStatusInput,
+		formKey,
+	} = useAddMockFormState({ selectedMock })
+
 	const openApiSuggestions = useMemo(() => {
 		const seen = new Set<string>()
 		const results: Array<{ url: string; label: string }> = []
@@ -55,25 +69,6 @@ export const AddMockForm: React.FC<
 		}
 		return results
 	}, [store.mocks])
-
-	const mockingEnabled = store.active
-	const selectedCollectionOpenApiUrl = useMemo(() => {
-		const collectionId = selectedMock?.collectionId
-		if (!collectionId) return ''
-		return String(store.collectionTree.nodes[collectionId]?.openApiUrl ?? '').trim()
-	}, [store.collectionTree.nodes, selectedMock?.collectionId])
-	const responseEditorRef = React.useRef<AutoResizeCodeMirrorHandle>(null as unknown as AutoResizeCodeMirrorHandle)
-
-	const {
-		values,
-		setValues,
-		statusInput,
-		setStatusInput,
-		formKey,
-	} = useAddMockFormState({
-		selectedMock,
-		selectedCollectionOpenApiUrl,
-	})
 
 	const filteredSuggestions = useMemo(() => {
 		const current = (values.openApiUrl ?? '').trim()
@@ -94,13 +89,26 @@ export const AddMockForm: React.FC<
 		openApiInputRef.current?.blur()
 	}, [setValues])
 
+	const apply = resolveMockApply(values)
+	const initialTab = resolveMockApply(selectedMock ?? {}).requestBody ? APPLY_TAB_INDEX.requestBody : APPLY_TAB_INDEX.responseBody
+	const [activeTab, setActiveTab] = useState(initialTab)
+	useEffect(() => setActiveTab(initialTab), [formKey, initialTab])
 	const openApiValidation = useOpenApiValidation({
-		openApiUrl: values.openApiUrl,
+		openApiUrl: apply.responseBody ? values.openApiUrl : undefined,
 		requestUrl: values.url,
 		method: values.method,
 		status: values.status,
 		responseBody: values.response,
 	})
+	const requestValidation = useOpenApiValidation({
+		openApiUrl: apply.requestBody ? values.openApiUrl : undefined,
+		requestUrl: values.url,
+		method: values.method,
+		responseBody: values.requestPatch?.body,
+		target: 'request',
+	})
+	/** The check the OpenAPI field reports on: the body that is on. */
+	const activeValidation = apply.requestBody ? requestValidation : openApiValidation
 
 	const aiSettings = useMemo(() => getAISettings(store), [store])
 	const aiGate = useMemo(() => {
@@ -111,7 +119,7 @@ export const AddMockForm: React.FC<
 		if (!active) {
 			return { ready: false, reason: t.ai_gate_pick }
 		}
-		if (!active.apiKey.trim()) {
+		if (!active.apiKeyMask) {
 			return { ready: false, reason: t.ai_gate_addKey(active.name) }
 		}
 		return { ready: true, reason: t.ai_gate_generate(active.name) }
@@ -140,6 +148,52 @@ export const AddMockForm: React.FC<
 		openApiOperation: openApiValidation.status === 'ready' ? openApiValidation.responseSchema : undefined,
 		onResult: (response) => setValues((prev) => ({ ...prev, response })),
 	})
+
+	const requestSchema = requestValidation.status === 'ready' ? requestValidation.responseSchema : undefined
+	const requestErrorGate = {
+		disabled: !requestSchema,
+		reason: requestSchema ? '' : t.ai_errorDisabled(t.ai_errorMissing_schema),
+	}
+	const [requestAiMode, setRequestAiMode] = useState<AIGenerationMode>('happy')
+	const effectiveRequestMode: AIGenerationMode = requestAiMode === 'error' && requestErrorGate.disabled ? 'happy' : requestAiMode
+	const requestAiGeneration = useAIGeneration({
+		store,
+		values,
+		openApiOperation: requestSchema,
+		target: 'request',
+		onResult: (body) => setValues((prev) => ({
+			...prev,
+			requestPatch: { mode: prev.requestPatch?.mode ?? 'replace', body },
+		})),
+	})
+	const requestEditorRef = React.useRef<AutoResizeCodeMirrorHandle>(null as unknown as AutoResizeCodeMirrorHandle)
+	const containerRef = useRef<HTMLDivElement>(null)
+	const activeTabRef = useRef(activeTab)
+	activeTabRef.current = activeTab
+
+	/**
+	 * Ctrl/Cmd+F anywhere in the form searches the body of the open tab: the request body on its tab,
+	 * the response body otherwise. Caught before anything else on the page: in DevTools the panel
+	 * gets a script that hands Ctrl/Cmd+F to the DevTools search, and it must not get this one.
+	 */
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (!(event.ctrlKey || event.metaKey) || String(event.key).toLowerCase() !== 'f') return
+			const target = event.target as Node | null
+			const inForm = Boolean(target && containerRef.current?.contains(target))
+			if (!inForm && target !== document.body) return
+			event.preventDefault()
+			event.stopPropagation()
+			if (activeTabRef.current === APPLY_TAB_INDEX.requestBody) {
+				requestEditorRef.current?.openFind()
+				return
+			}
+			setActiveTab(APPLY_TAB_INDEX.responseBody)
+			responseEditorRef.current?.openFind()
+		}
+		window.addEventListener('keydown', onKeyDown, true)
+		return () => window.removeEventListener('keydown', onKeyDown, true)
+	}, [])
 
 	const isNew = !selectedMock?.id
 	const envVars = useMemo(() => getActiveEnvVars(store), [store])
@@ -184,20 +238,15 @@ export const AddMockForm: React.FC<
 		if (!raw) return false
 		return !isJsonValid(raw)
 	}, [values.response])
-	const openApiLoading = openApiValidation.status === 'loading'
-	const isResponseJsonValidationError = openApiValidation.status === 'error'
-		&& /^Response JSON is invalid:/i.test(String(openApiValidation.message ?? ''))
-	const openApiError = openApiValidation.status === 'error' && !isResponseJsonValidationError
-		? openApiValidation.message
+	const openApiLoading = activeValidation.status === 'loading'
+	const isBodyJsonValidationError = activeValidation.status === 'error'
+		&& /^(Response|Request) JSON is invalid:/i.test(String(activeValidation.message ?? ''))
+	const openApiError = activeValidation.status === 'error' && !isBodyJsonValidationError
+		? activeValidation.message
 		: ''
-	const openApiReady = openApiValidation.status === 'ready'
-	const openApiSuggestionsPartial = openApiValidation.status === 'ready' && openApiValidation.suggestionsTruncated
-	const hasResponseSchemaErrors = openApiValidation.status === 'ready'
-		&& (
-			openApiValidation.issues.length > 0
-			|| openApiValidation.suggestions.some((suggestion) => suggestion.required)
-		)
-	const hasResponseValidationErrors = hasResponseSyntaxError || hasResponseSchemaErrors
+	const openApiReady = activeValidation.status === 'ready'
+	const openApiSuggestionsPartial = activeValidation.status === 'ready' && activeValidation.suggestionsTruncated
+	const hasResponseValidationErrors = apply.responseBody && hasResponseSyntaxError
 
 	const handleSubmit = async () => {
 		if (!canSubmit || hasResponseValidationErrors) return
@@ -213,7 +262,7 @@ export const AddMockForm: React.FC<
 	}
 
 	return (
-		<div className={s.container}>
+		<div className={s.container} ref={containerRef}>
 			<div className={s.content}>
 				<SideDrawerHeader>
 					<strong className={s.drawerTitle}>
@@ -281,6 +330,7 @@ export const AddMockForm: React.FC<
 								setValues((prev) => ({ ...prev, name: String(data.value) }))
 							}
 							className={isDark ? s.darkField : undefined}
+							data-testid="mock-name-input"
 						/>
 
 						<Form.TextArea
@@ -309,6 +359,9 @@ export const AddMockForm: React.FC<
 							loading={openApiLoading}
 							ready={openApiReady}
 							suggestionsPartial={openApiSuggestionsPartial}
+							checkSkippedText={activeValidation.status === 'ready' && activeValidation.bodyCheckSkipped
+								? t.mock_openApiTooLarge(formatBytes(activeValidation.bodyCheckSkipped), formatBytes(SCHEMA_CHECK_MAX_CHARS))
+								: undefined}
 							suggestions={filteredSuggestions}
 							suggestOpen={openApiSuggestOpen}
 							onChange={(next) => setValues((prev) => ({ ...prev, openApiUrl: next }))}
@@ -334,10 +387,20 @@ export const AddMockForm: React.FC<
 							}}
 							delay={values.delay}
 							onDelayChange={(delay) => setValues((prev) => ({ ...prev, delay }))}
+							statusDisabledReason={apply.responseBody ? undefined : t.pane_statusFromServer}
 						/>
 
-						<Tab
-							menu={{ secondary: true, pointing: true, inverted: isDark }}
+						{appliesAnything(apply) ? null : (
+							<div className={s.applyNothing} data-testid="apply-nothing">
+								<Icon name="exclamation triangle" />
+								<span>{t.pane_applyNothing}</span>
+							</div>
+						)}
+
+						<AnimatedTabs
+							activeIndex={activeTab}
+							onActiveIndexChange={setActiveTab}
+							isDark={isDark}
 							panes={buildAddMockPanes(
 								values,
 								setValues,
@@ -368,6 +431,32 @@ export const AddMockForm: React.FC<
 									},
 									onCancel: aiGeneration.cancel,
 								},
+								{
+									validation: requestValidation,
+									editorRef: requestEditorRef,
+									ai: {
+										target: 'request',
+										ready: aiGate.ready && apply.requestBody,
+										reason: aiGate.reason,
+										generating: requestAiGeneration.state.status === 'generating',
+										generatingPhase:
+											requestAiGeneration.state.status === 'generating' ? requestAiGeneration.state.phase : 'initial',
+										succeeded: requestAiGeneration.state.status === 'success',
+										error: requestAiGeneration.state.status === 'error' ? requestAiGeneration.state.message : '',
+										errorTraceId:
+											requestAiGeneration.state.status === 'error' ? requestAiGeneration.state.traceId : undefined,
+										mode: effectiveRequestMode,
+										errorDisabled: requestErrorGate.disabled,
+										errorReason: requestErrorGate.reason,
+										onModeChange: setRequestAiMode,
+										onGenerate: () => {
+											requestAiGeneration.clearError()
+											void requestAiGeneration.generate(effectiveRequestMode)
+										},
+										onCancel: requestAiGeneration.cancel,
+									},
+								},
+								setActiveTab,
 							)}
 						/>
 					</Segment>
@@ -395,6 +484,7 @@ export const AddMockForm: React.FC<
 						disabled={!canSubmit || hasResponseValidationErrors}
 						onClick={() => void handleSubmit()}
 						className={s.button}
+						data-testid="mock-save-button"
 					>
 						{isNew ? t.mock_addBtn : t.mock_updateBtn}
 					</Button>

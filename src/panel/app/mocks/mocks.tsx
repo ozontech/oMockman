@@ -17,10 +17,12 @@ import { useFirefoxPointerDnd } from './dnd/use-firefox-pointer-dnd'
 import { useCollectionMeta } from './hooks/use-collection-meta'
 import { createMocksTableSchema } from './mocks-table-schema'
 import { buildMocksTableSchemaParams } from './table/build-mocks-table-schema-params'
-import { saveCollectionOpenApiSettings } from './use-cases/save-collection-openapi-settings'
+import { saveCollectionScenario } from './use-cases/save-collection-scenario'
+import { collectionMocks } from './model/scenario'
 import { exportCollectionToJsonFile } from './use-cases/export-collection'
 
-import type { ICollectionEntry } from '@/interface/collection'
+import type { ICollectionEntry, ICollectionScenario } from '@/interface/collection'
+import { resetScenario } from '@/panel/app/service/scenario-client'
 import { copyTextToClipboard, downloadJsonFile } from '@/services/helper'
 import { getActiveEnvVars } from '@/services/env'
 import { IS_FIREFOX } from '@/services/browser'
@@ -222,10 +224,6 @@ export const Mocks: React.FC = () => {
 		store.collectionTree,
 		store.mocks,
 	)
-
-	const tableKey = useMemo(() => {
-		return `${rows.length}`
-	}, [rows.length])
 
 	const expandToFirstActive = useCallback((collectionId: string) => {
 		const nodes = store.collectionTree.nodes
@@ -433,18 +431,28 @@ export const Mocks: React.FC = () => {
 		onDragEnd,
 	}), [allowDrop, handleRowDrag, handleDropOnRow, onDragEnd, isFirefox])
 
+	const settingsCollectionMocks = useMemo(
+		() => (selectedSettingsCollectionId ? collectionMocks(store.collectionTree, store.mocks, selectedSettingsCollectionId) : []),
+		[selectedSettingsCollectionId, store.collectionTree, store.mocks],
+	)
+	const handleResetScenario = useCallback((collectionId: string) => {
+		void resetScenario(collectionId).then((done) => {
+			if (done) toast.success(t.sc_resetDone)
+			else toast.error(t.sc_resetFailed)
+		})
+	}, [t])
+
 	const handleCollectionSettingsSave = useCallback(
-		async (collectionId: string, openApiUrl: string) => {
+		async (collectionId: string, scenario: ICollectionScenario | undefined) => {
 			try {
 				const { setStoreProperties } = useChromeStore.getState()
-				await saveCollectionOpenApiSettings({
+				await saveCollectionScenario({
 					store,
 					collectionId,
-					openApiUrl,
+					scenario,
 					setStoreProperties,
 					tabId: useGlobalStore.getState().meta.tab?.id,
 				})
-				setSelectedSettingsCollectionId(null)
 				toast.success(t.mocks_collectionSaved)
 			} catch (error) {
 				toast.error(describeSaveError(error, t, t.toast_collectionCannotUpdate))
@@ -496,6 +504,7 @@ export const Mocks: React.FC = () => {
 		collectionActions,
 		ensureCollectionExpanded,
 		onCopyUrl: copyUrl,
+		onResetScenario: handleResetScenario,
 		setSelectedMockRaw: setSelectedMock,
 		setSelectedSettingsCollectionId,
 		exportCollection,
@@ -541,7 +550,6 @@ export const Mocks: React.FC = () => {
 			>
 				<TableWrapper
 					schema={schema}
-					key={tableKey}
 					data={rows}
 					columnWidths={columnWidths}
 					onColumnWidthChange={handleColumnWidthChange}
@@ -678,6 +686,7 @@ export const Mocks: React.FC = () => {
 					getRowAttrs={(row) => (
 						row.rowType === 'collection'
 							? {
+								'data-testid': 'collection-row',
 								'data-row-id': String(row.id),
 								'data-row-type': 'collection',
 								'data-level': row.level,
@@ -685,6 +694,7 @@ export const Mocks: React.FC = () => {
 								'data-scope-collection-id': row.node.id,
 							}
 							: {
+								'data-testid': 'mock-row',
 								'data-row-id': String(row.id),
 								'data-row-type': 'mock',
 								'data-level': row.level,
@@ -716,7 +726,9 @@ export const Mocks: React.FC = () => {
 				open={selectedSettingsCollectionId !== null}
 				onClose={() => setSelectedSettingsCollectionId(null)}
 				selectedCollection={selectedSettingsCollectionId ? store.collectionTree.nodes[selectedSettingsCollectionId] : undefined}
-				onSaveOpenApiUrl={handleCollectionSettingsSave}
+				onSave={handleCollectionSettingsSave}
+				mocks={settingsCollectionMocks}
+				onResetScenario={handleResetScenario}
 				isDark={isDark}
 			/>
 		</>

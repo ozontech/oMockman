@@ -66,3 +66,27 @@
   margin: 0 !important;
 }
 
+
+.labelStack {
+  display: inline-grid;
+
+  > span {
+    grid-area: 1 / 1;
+  }
+}
+
+.labelGhost {
+  visibility: hidden;
+}
+
+.dateCell {
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kindIcons {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}

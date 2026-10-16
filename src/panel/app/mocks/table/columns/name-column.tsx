@@ -49,6 +49,7 @@ export function createNameColumn(params: CreateMocksTableSchemaParams): TableSch
 		columnKey: 'name',
 		resizable: true,
 		minResizableWidth: 150,
+		minFitWidth: 180,
 		maxResizableWidth: 1070,
 		maxWidth: 1070,
 		width: columnWidths.name,

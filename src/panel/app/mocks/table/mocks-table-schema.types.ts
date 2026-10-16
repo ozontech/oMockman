@@ -28,6 +28,8 @@ export type CreateMocksTableSchemaParams = {
 	performDrop: (e: React.DragEvent, containerId: string | null, index?: number) => void
 	onDragStart: (payload: DragEntryPayload) => (e: React.DragEvent) => void
 	onCopyUrl: (url: string) => void
+	/** Starts the call counts of a collection scenario on the inspected page over. */
+	onResetScenario: (collectionId: string) => void
 	columnWidths: {
 		name: number
 		url: number

@@ -1,82 +1,127 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react'
-import { Modal, Button, Form, Input } from 'semantic-ui-react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { Modal, Button, Icon } from 'semantic-ui-react'
 
 import s from './collection-settings-form.module.scss'
+import { ScenarioEditor } from './scenario-editor'
 
-import type { ICollectionNode } from '@/interface/collection'
+import { modalActionsSurface, modalHeaderSurface, modalSurface } from '@/panel/app/blocks'
+import { useGlobalStore } from '@/panel/app/store'
+import type { ICollectionNode, ICollectionScenario } from '@/interface/collection'
+import type { IMockResponse } from '@/interface/mock'
 
 interface CollectionSettingsFormProps {
 	open: boolean
 	onClose: () => void
 	selectedCollection?: ICollectionNode
-	onSaveOpenApiUrl: (collectionId: string, openApiUrl: string) => void
+	onSave: (collectionId: string, scenario: ICollectionScenario | undefined) => void
+	/** The mocks of the collection and its subcollections, for the scenario rules. */
+	mocks: IMockResponse[]
+	onResetScenario?: (collectionId: string) => void
 	isDark: boolean
 }
 
+const CLOSE_MS = 180
+
+/** Collection settings: for now, its scenario. */
 export const CollectionSettingsForm: React.FC<CollectionSettingsFormProps> = ({
 	open,
 	onClose,
 	selectedCollection,
-	onSaveOpenApiUrl,
+	onSave,
+	mocks,
+	onResetScenario,
 	isDark,
 }) => {
-	const [openApiUrl, setOpenApiUrl] = useState('')
+	const t = useGlobalStore((st) => st.t)
+	const [scenario, setScenario] = useState<ICollectionScenario | undefined>()
+	const [closing, setClosing] = useState(false)
+	const closeTimer = useRef<number>()
+
+	useEffect(() => () => window.clearTimeout(closeTimer.current), [])
 
 	useEffect(() => {
-		if (selectedCollection?.openApiUrl) {
-			setOpenApiUrl(selectedCollection.openApiUrl)
-		} else {
-			setOpenApiUrl('')
+		window.clearTimeout(closeTimer.current)
+		if (!open) {
+			setClosing(false)
+			return
 		}
-	}, [selectedCollection?.openApiUrl, open])
+		setScenario(selectedCollection?.scenario)
+	}, [open, selectedCollection?.id])
 
-	const handleClose = useCallback(() => {
-		setOpenApiUrl('')
-		onClose()
-	}, [onClose])
+	const requestClose = useCallback(() => {
+		if (closing) return
+		setClosing(true)
+		closeTimer.current = window.setTimeout(onClose, CLOSE_MS)
+	}, [closing, onClose])
+
+	/** Escape in an open dropdown closes the dropdown, not the whole form with its unsaved rules. */
+	const handleModalClose = useCallback((event: React.SyntheticEvent | KeyboardEvent) => {
+		const target = event.target as Element | null
+		if (event.type === 'keydown' && target?.closest?.('.ui.dropdown.active')) return
+		requestClose()
+	}, [requestClose])
 
 	const handleSave = useCallback(() => {
 		if (!selectedCollection) return
+		onSave(selectedCollection.id, scenario)
+		requestClose()
+	}, [selectedCollection, scenario, onSave, requestClose])
 
-		onSaveOpenApiUrl(selectedCollection.id, openApiUrl)
-		handleClose()
-	}, [selectedCollection, openApiUrl, onSaveOpenApiUrl, handleClose])
-
-	const title = useMemo(() => {
-		if (!selectedCollection?.name) return 'Collection Settings'
-		return `Settings: ${selectedCollection.name}`
-	}, [selectedCollection?.name])
+	const phase = closing ? 'mm-modal-leave' : 'mm-modal-enter'
 
 	return (
 		<Modal
-			size="small"
-			open={open}
-			onClose={handleClose}
+			size="large"
+			centered={false}
+			open={open || closing}
+			onClose={handleModalClose}
 			closeOnDimmerClick={false}
 			closeOnEscape
-			dimmer={isDark ? 'blurring' : 'dimmingLight'}
-			className={s.modal}
+			transition={undefined}
+			duration={0}
+			style={modalSurface(isDark)}
+			className={`mm-modal ${phase} ${s.modal}`}
+			dimmerClassName={`mm-modal-dimmer ${phase}`}
+			data-testid="collection-modal"
 		>
-			<Modal.Header>{title}</Modal.Header>
-			<Modal.Content>
-				<Form inverted={isDark}>
-					<Form.Field>
-						<label>OpenAPI / Swagger URL</label>
-						<Input
-							className={isDark ? s.darkField : undefined}
-							placeholder="https://api.example.com/openapi.json"
-							value={openApiUrl}
-							onChange={(e) => setOpenApiUrl(e.target.value)}
-							fluid
-						/>
-					</Form.Field>
-				</Form>
+			<Modal.Header style={modalHeaderSurface(isDark)} data-testid="collection-modal-header">
+				<div className={s.headerRow}>
+					<span className={s.title}>
+						{t.col_settingsTitle}
+						{selectedCollection ? (
+							<span className={s.collectionName} title={selectedCollection.name}>
+								<Icon name="folder" />
+								{selectedCollection.name}
+							</span>
+						) : null}
+					</span>
+					<Button
+						icon
+						basic
+						type="button"
+						size="mini"
+						inverted={isDark}
+						onClick={requestClose}
+						title={t.ai_close}
+						aria-label={t.ai_close}
+						data-testid="collection-modal-close"
+					>
+						<Icon name="close" />
+					</Button>
+				</div>
+			</Modal.Header>
+			<Modal.Content scrolling style={modalSurface(isDark)} className={s.content}>
+				<ScenarioEditor
+					scenario={scenario}
+					onChange={setScenario}
+					mocks={mocks}
+					isDark={isDark}
+					onReset={selectedCollection && onResetScenario ? () => onResetScenario(selectedCollection.id) : undefined}
+				/>
 			</Modal.Content>
-			<Modal.Actions>
-				<Button onClick={handleClose} inverted={isDark}>Cancel</Button>
-				<Button primary onClick={handleSave}>
-					Save
-				</Button>
+			<Modal.Actions style={modalActionsSurface(isDark)}>
+				<Button type="button" basic inverted={isDark} onClick={requestClose} data-testid="collection-modal-cancel">{t.col_cancel}</Button>
+				<Button type="button" primary onClick={handleSave} data-testid="collection-modal-save">{t.col_save}</Button>
 			</Modal.Actions>
 		</Modal>
 	)

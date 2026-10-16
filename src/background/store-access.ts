@@ -27,7 +27,6 @@ function isProvider(value: unknown): value is IAIProviderConfig {
 	const candidate = value as Partial<IAIProviderConfig>
 	return typeof candidate.id === 'string'
 		&& typeof candidate.baseURL === 'string'
-		&& typeof candidate.apiKey === 'string'
 		&& typeof candidate.model === 'string'
 }
 

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { chatCompletion } from '../ai-client'
-import type { IAIProviderConfig } from '../../../interface/ai'
+import type { IAIProviderWithKey } from '../../../interface/ai'
 
-function makeProvider(overrides: Partial<IAIProviderConfig> = {}): IAIProviderConfig {
+function makeProvider(overrides: Partial<IAIProviderWithKey> = {}): IAIProviderWithKey {
 	return {
 		id: 'p-1',
 		name: 'Test',

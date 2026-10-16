@@ -4,6 +4,7 @@ import type { Row } from './model/types'
 import type { CreateMocksTableSchemaParams } from './table/mocks-table-schema.types'
 import {
 	createActionsColumn,
+	createCreatedColumn,
 	createDelayColumn,
 	createMethodColumn,
 	createNameColumn,
@@ -18,6 +19,7 @@ export function createMocksTableSchema(params: CreateMocksTableSchemaParams): Ta
 		createNameColumn(params),
 		createMethodColumn(params),
 		createUrlColumn(params),
+		createCreatedColumn(params),
 		createStatusColumn(params),
 		createDelayColumn(params),
 		createActionsColumn(params),

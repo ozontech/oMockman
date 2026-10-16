@@ -22,25 +22,72 @@ const DENIED_HEADERS = new Set([
 	'x-amz-security-token',
 ])
 
-const store = new Map<string, HeaderItem[]>()
+/** Past this many entries the oldest go first, whatever their age. */
+const MAX_ENTRIES = 500
+/** A response with more headers keeps the first ones; a longer value is cut. */
+const MAX_HEADERS_PER_ENTRY = 100
+const MAX_HEADER_VALUE_CHARS = 8 * 1024
+
+type Entry = { headers: HeaderItem[]; expiresAt: number }
+
+// Insertion order is expiry order: an entry is re-inserted whenever it is set again.
+const store = new Map<string, Entry>()
+
+const entryKey = (tabId: number, method: string, url: string): string => `${tabId} ${makeHeadersKey(method, url)}`
+
+function dropExpired(now: number): void {
+	for (const [key, entry] of store) {
+		if (entry.expiresAt > now) return
+		store.delete(key)
+	}
+}
 
 export function isDeniedHeader(name: string): boolean {
 	return DENIED_HEADERS.has(String(name || '').toLowerCase())
 }
 
-export function setHeaders(method: string, url: string, headers: chrome.webRequest.HttpHeader[] | undefined): void {
-	const key = makeHeadersKey(method, url)
+/** Keyed by tab as well: the same URL in two tabs must not swap headers. */
+export function setHeaders(
+	tabId: number,
+	method: string,
+	url: string,
+	headers: chrome.webRequest.HttpHeader[] | undefined,
+): void {
+	const now = Date.now()
+	dropExpired(now)
+	const key = entryKey(tabId, method, url)
 	const norm = (headers || [])
-		.map((h) => ({ name: (h.name || '').toLowerCase(), value: h.value || '' }))
+		.map((h) => ({ name: (h.name || '').toLowerCase(), value: (h.value || '').slice(0, MAX_HEADER_VALUE_CHARS) }))
 		.filter((h) => !isDeniedHeader(h.name))
-	store.set(key, norm)
-	setTimeout(() => store.delete(key), TTL_MS)
+		.slice(0, MAX_HEADERS_PER_ENTRY)
+	store.delete(key)
+	store.set(key, { headers: norm, expiresAt: now + TTL_MS })
+	while (store.size > MAX_ENTRIES) {
+		const oldest = store.keys().next().value
+		if (oldest === undefined) break
+		store.delete(oldest)
+	}
 }
 
-export function getHeaders(method: string, url: string): HeaderItem[] {
-	return store.get(makeHeadersKey(method, url)) || []
+export function getHeaders(tabId: number, method: string, url: string): HeaderItem[] {
+	const key = entryKey(tabId, method, url)
+	const entry = store.get(key)
+	if (!entry) return []
+	if (entry.expiresAt <= Date.now()) {
+		store.delete(key)
+		return []
+	}
+	return entry.headers
 }
 
-export function clearHeaders(): void {
-	store.clear()
+/** Without a tab, empties the whole cache. */
+export function clearHeaders(tabId?: number): void {
+	if (tabId === undefined) {
+		store.clear()
+		return
+	}
+	const prefix = `${tabId} `
+	for (const key of store.keys()) {
+		if (key.startsWith(prefix)) store.delete(key)
+	}
 }

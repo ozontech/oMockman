@@ -19,8 +19,10 @@ export const ClearButton: React.FC = () => {
 			onClick={clearLogs}
 			title={t.header_clearLogs}
 			aria-label={t.header_clearLogs}
+			data-testid="clear-logs-button"
 		>
 			<Icon name="eraser" />
 		</Button>
 	)
 }
+

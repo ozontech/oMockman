@@ -162,3 +162,26 @@ body.dark .cmHost :global(.mm-find-match-current) {
 	background-color: rgba(255, 215, 0, 0.34) !important;
 }
 
+
+.largeBanner {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 10px;
+	padding: 8px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+	color: #6b6b6b;
+	background: rgb(0 0 0 / 4%);
+}
+
+:global(body.dark) .largeBanner {
+	color: #b8b8b8;
+	background: rgb(255 255 255 / 6%);
+}
+
+.largeBannerText {
+	flex: 1;
+	min-width: 200px;
+}

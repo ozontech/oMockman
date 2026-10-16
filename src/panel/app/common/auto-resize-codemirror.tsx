@@ -13,6 +13,7 @@ import { useLintTooltipLifecycle } from './use-lint-tooltip'
 import editorStyles from './code-editor.module.scss'
 
 import { safeParseInt } from '@/services/number'
+import { LARGE_EDITOR_CHARS } from '@/services/body-limits'
 
 const jsonLinter = linter((view) => {
 	const diagnostics: Diagnostic[] = []
@@ -41,6 +42,8 @@ const jsonLinter = linter((view) => {
 	}
 	return diagnostics
 })
+
+const LARGE_EDITOR_HEIGHT = 'max(320px, 65vh)'
 
 export interface AutoResizeCodeMirrorProps {
 	value: string
@@ -95,11 +98,19 @@ function toActionKey(value: unknown): string {
 	}
 }
 
+/**
+ * Shared empty lists: a fresh `[]` on every render re-ran the diagnostics effect, whose state
+ * update rendered again, so an editor without diagnostics re-rendered in an endless loop.
+ */
+const NO_DIAGNOSTICS: AutoResizeCodeMirrorDiagnostic[] = []
+const NO_RESOLVED_DIAGNOSTICS: ResolvedExternalDiagnostic[] = []
+const ignoreChange = (): void => undefined
+
 function resolveExternalDiagnostics(
 	externalDiagnostics: AutoResizeCodeMirrorDiagnostic[],
 	content: string,
 ): ResolvedExternalDiagnostic[] {
-	if (!Array.isArray(externalDiagnostics) || externalDiagnostics.length === 0) return []
+	if (!Array.isArray(externalDiagnostics) || externalDiagnostics.length === 0) return NO_RESOLVED_DIAGNOSTICS
 	const diagnostics: ResolvedExternalDiagnostic[] = []
 	const dedupe = new Set<string>()
 
@@ -153,10 +164,11 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 	placeholder,
 	readOnly,
 	enableNativeSearchPanel = false,
-	externalDiagnostics = [],
+	externalDiagnostics = NO_DIAGNOSTICS,
 }, ref) => {
 	const editorRef = useRef<HTMLDivElement | null>(null)
 	const viewRef = useRef<EditorView | null>(null)
+	const large = (value ?? '').length > LARGE_EDITOR_CHARS
 	const rafRef = useRef<number | null>(null)
 
 	const onChangeRef = useRef(onChange)
@@ -166,6 +178,7 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 
 	const [findOpen, setFindOpen] = useState(false)
 	const findOpenRef = useRef(false)
+	const findInputRef = useRef<HTMLInputElement>(null)
 	const [query, setQuery] = useState('')
 	const [currentIdx, setCurrentIdx] = useState(0)
 	const [appliedFixes, setAppliedFixes] = useState<Record<string, true>>({})
@@ -231,10 +244,11 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 			}),
 		)
 		setAppliedFixes((prev) => {
+			const kept = Object.keys(prev).filter((key) => allowed.has(key))
+			// The same object when nothing is dropped: a new one would render again for nothing.
+			if (kept.length === Object.keys(prev).length) return prev
 			const next: Record<string, true> = {}
-			for (const key of Object.keys(prev)) {
-				if (allowed.has(key)) next[key] = true
-			}
+			for (const key of kept) next[key] = true
 			return next
 		})
 	}, [resolvedExternalDiagnostics])
@@ -243,6 +257,10 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 		setFindOpen(true)
 		findOpenRef.current = true
 		setCurrentIdx(0)
+		requestAnimationFrame(() => {
+			findInputRef.current?.focus()
+			findInputRef.current?.select()
+		})
 	}, [])
 
 	const closeFind = useCallback(() => {
@@ -251,6 +269,9 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 	}, [])
 
 	useImperativeHandle(ref, () => ({ openFind, closeFind }), [openFind, closeFind])
+
+	// Stable: CodeMirror reconfigures the whole editor whenever its onChange changes.
+	const handleChange = useCallback((next: string) => onChangeRef.current(next), [])
 
 	const scheduleUpdateHeight = useCallback((): void => {
 		if (rafRef.current != null) {
@@ -266,10 +287,11 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 			if (!host) return
 			const content = host.querySelector('.cm-content') as HTMLElement | null
 			if (content) {
-				const hugeText = (valueRef.current ?? '').length > 250_000
-				const desired = content.scrollHeight + 24
-				const newHeight = hugeText ? 720 : Math.max(desired, 120)
-				host.style.height = `${newHeight}px`
+				if ((valueRef.current ?? '').length > LARGE_EDITOR_CHARS) {
+					host.style.height = ''
+					return
+				}
+				host.style.height = `${Math.max(content.scrollHeight + 24, 120)}px`
 			}
 		})
 	}, [])
@@ -558,10 +580,7 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 		return [
 			...(isDark ? [oneDark] : []),
 			json(),
-			jsonLinter,
-			openApiLinter,
-			lintGutter(),
-			EditorView.lineWrapping,
+			...(large ? [] : [jsonLinter, openApiLinter, lintGutter(), EditorView.lineWrapping]),
 			...(readOnly ? [EditorView.editable.of(false)] : []),
 			openFindKeys,
 			findDecoField,
@@ -584,7 +603,7 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 				if (update.docChanged) setTimeout(scheduleUpdateHeight, 0)
 			}),
 		]
-	}, [appliedFixes, applyAllAvailableFixes, closeFind, enableNativeSearchPanel, isDark, openFind, readOnly, resolvedExternalDiagnostics, scheduleUpdateHeight, triggerPendingFix])
+	}, [appliedFixes, applyAllAvailableFixes, closeFind, enableNativeSearchPanel, isDark, large, openFind, readOnly, resolvedExternalDiagnostics, scheduleUpdateHeight, triggerPendingFix])
 
 	useEffect(() => () => {
 		if (rafRef.current != null) {
@@ -657,11 +676,12 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 	}, [currentIdx, findOpen, matches, query])
 
 	return (
-		<div ref={editorRef} className={editorStyles.cmHost} style={{ width: '100%' }}>
+		<div ref={editorRef} data-testid="code-editor" className={editorStyles.cmHost} style={{ width: '100%' }}>
 			{!enableNativeSearchPanel && findOpen ? (
-				<div className={`${editorStyles.findBar} ${isDark ? editorStyles.findBarDark : ''}`}>
+				<div className={`${editorStyles.findBar} ${isDark ? editorStyles.findBarDark : ''}`} data-testid="editor-find-bar">
 					<div className={editorStyles.findRow}>
 						<input
+							ref={findInputRef}
 							className={editorStyles.findInput}
 							placeholder="Find…"
 							value={query}
@@ -709,7 +729,8 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 			) : null}
 			<CodeMirror
 				value={value}
-				height="auto"
+				height={large ? LARGE_EDITOR_HEIGHT : 'auto'}
+				data-large={large ? 'true' : undefined}
 				style={{
 					minHeight: '120px',
 					width: '100%',
@@ -726,7 +747,7 @@ export const AutoResizeCodeMirror = forwardRef<AutoResizeCodeMirrorHandle, AutoR
 						void 0
 					}
 				}}
-				onChange={readOnly ? () => undefined : onChange}
+				onChange={readOnly ? ignoreChange : handleChange}
 				placeholder={placeholder}
 			/>
 		</div>

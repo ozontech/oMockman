@@ -7,6 +7,7 @@ import type {
 	IAIChatRequestOptions,
 	IAIMessage,
 	IAIProviderConfig,
+	IAIProviderWithKey,
 	IOpenAIChatCompletionResponse,
 } from '@/interface/ai'
 
@@ -27,7 +28,7 @@ function readTraceId(headers: Headers): string | undefined {
 	return undefined
 }
 
-function buildHeaders(provider: IAIProviderConfig): Record<string, string> {
+function buildHeaders(provider: IAIProviderWithKey): Record<string, string> {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
 		Accept: 'application/json',
@@ -85,7 +86,7 @@ function buildRequestBody(
 	return body
 }
 
-function validateProvider(provider: IAIProviderConfig): string | null {
+function validateProvider(provider: IAIProviderWithKey): string | null {
 	if (!provider.baseURL?.trim()) return 'Provider baseURL is empty'
 	if (!provider.apiKey?.trim()) return 'Provider apiKey is empty'
 	if (!provider.model?.trim()) return 'Provider model is empty'
@@ -134,7 +135,7 @@ function extractContent(payload: IOpenAIChatCompletionResponse): string {
  * Performs one request against an OpenAI-compatible API.
  */
 export async function chatCompletion(
-	provider: IAIProviderConfig,
+	provider: IAIProviderWithKey,
 	messages: IAIMessage[],
 	options?: IAIChatRequestOptions,
 ): Promise<AIChatResponse> {

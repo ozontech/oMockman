@@ -24,8 +24,39 @@
 	color: var(--text) !important;
 }
 
-.darkField :global(.ui.input > input) {
-	background-color: var(--bg) !important;
-	color: var(--text) !important;
-	border-color: var(--border) !important;
+.headerRow {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.title {
+	display: inline-flex;
+	gap: 10px;
+	align-items: center;
+	min-width: 0;
+}
+
+.collectionName {
+	overflow: hidden;
+	max-width: 420px;
+	padding: 3px 10px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	font-size: 13px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--muted-text);
+
+	:global(i.icon) {
+		margin-right: 4px;
+		font-size: 12px;
+	}
+}
+
+/** A narrow window scrolls the rules sideways instead of squeezing them. */
+.content.content {
+	overflow: auto;
 }

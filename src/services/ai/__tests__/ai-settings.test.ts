@@ -34,7 +34,7 @@ function makeProvider(overrides: Partial<IAIProviderConfig> = {}): IAIProviderCo
 		id: 'p-1',
 		name: 'OpenAI',
 		baseURL: 'https://api.openai.com/v1',
-		apiKey: 'sk-test',
+		apiKeyMask: 'sk-…test',
 		model: 'gpt-4o-mini',
 		createdOn: 1,
 		...overrides,
@@ -85,7 +85,6 @@ describe('createProvider', () => {
 		const provider = createProvider({
 			name: 'x',
 			baseURL: 'https://x',
-			apiKey: 'k',
 			model: 'm',
 		})
 		expect(provider.id).toMatch(/^[0-9a-f-]{36}$/i)
@@ -96,7 +95,6 @@ describe('createProvider', () => {
 		const provider = createProvider({
 			name: 'x',
 			baseURL: 'https://x',
-			apiKey: 'k',
 			model: 'm',
 			// @ts-expect-error — intentionally testing runtime invariant
 			id: 'forged',

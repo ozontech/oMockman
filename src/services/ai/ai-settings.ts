@@ -40,7 +40,6 @@ function isValidProvider(value: unknown): value is IAIProviderConfig {
 	return typeof candidate.id === 'string'
 		&& typeof candidate.name === 'string'
 		&& typeof candidate.baseURL === 'string'
-		&& typeof candidate.apiKey === 'string'
 		&& typeof candidate.model === 'string'
 }
 

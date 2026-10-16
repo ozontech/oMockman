@@ -1,4 +1,3 @@
-import { RequestIdManager } from '@/inject'
 import { installBridge } from '@/inject/bridge'
 import { applyFetchWrapper } from '@/inject/fetch-wrapper'
 import { applyXhrWrapper } from '@/inject/xhr-wrapper'
@@ -29,9 +28,8 @@ if (!__IS_EXTENSION_WORLD__) {
 	if (!window.__MOCKMAN_LOADED__) {
 		window.__MOCKMAN_LOADED__ = true
 		installBridge()
-		const ids = new RequestIdManager()
-		applyFetchWrapper(ids)
-		applyXhrWrapper(ids)
+		applyFetchWrapper()
+		applyXhrWrapper()
 		window.__MOCKMAN_INJECT_READY__ = true
 		window.postMessage({ type: 'MOCKMAN_INJECT_READY' }, '*')
 	}
