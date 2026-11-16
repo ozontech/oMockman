@@ -18,8 +18,8 @@ beforeEach(() => {
 		runtime: { lastError: undefined },
 		storage: {
 			local: {
-				get: (keys: string[], cb: (items: Record<string, unknown>) => void) =>
-					cb(Object.fromEntries(keys.filter((key) => key in storage).map((key) => [key, structuredClone(storage[key])]))),
+				get: (keys: string | string[], cb: (items: Record<string, unknown>) => void) =>
+					cb(Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((key) => key in storage).map((key) => [key, structuredClone(storage[key])]))),
 				set: (items: Record<string, unknown>, cb: () => void) => {
 					Object.assign(storage, structuredClone(items))
 					cb()

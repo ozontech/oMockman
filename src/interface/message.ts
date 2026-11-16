@@ -11,6 +11,8 @@ export interface IEventMessage {
 	extensionName: 'MOCKMAN'
 	id?: number | string
 	sourceTabId?: number
+	sourceOrigin?: string | null
+	sourceDocumentId?: string
 	type?: 'LOG' | 'NOTIFICATION' | 'INIT' | 'PONG'
 	message: ILog | Record<string, unknown> | string | number
 }

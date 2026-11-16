@@ -1,4 +1,5 @@
 import type { Row } from './types'
+import { createSearchMatcher } from './search'
 
 import type { ICollectionEntry, ICollectionTree } from '@/interface/collection'
 import type { IMockResponse } from '@/interface/mock'
@@ -10,18 +11,8 @@ export function buildFilteredRows(
 	query: string,
 ): Row[] {
 	const rows: Row[] = []
-	const search = query.trim().toLowerCase()
+	const matches = createSearchMatcher(query)
 	const byId = new Map<string, IMockResponse>(mocks.map((m) => [m.id, m]))
-
-	const matches = (mock: IMockResponse): boolean => {
-		if (!search) return true
-		return (
-			(mock.name ?? '').toLowerCase().includes(search) ||
-			(mock.url ?? '').toLowerCase().includes(search) ||
-			(mock.method ?? '').toLowerCase().includes(search) ||
-			String(mock.status ?? '').includes(search)
-		)
-	}
 
 	const visit = (entries: ICollectionEntry[], level: number, parentCollectionId: string | null): void => {
 		for (let idx = 0; idx < entries.length; idx += 1) {

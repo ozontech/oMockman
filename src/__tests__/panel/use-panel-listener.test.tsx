@@ -43,6 +43,24 @@ describe('usePanelListener', () => {
 		useLogStore.setState({ logs: [] } as never)
 	})
 
+	it('retains readable Logs when the background port reconnects', () => {
+		vi.useFakeTimers()
+		const { unmount } = renderHook(() => usePanelListener(meta))
+		try {
+			const handler = port.onMessage.addListener.mock.calls[0][0]
+			act(() => handler({ type: 'LOG', sourceTabId: 42, sourceOrigin: 'https://example.com', message: log() }))
+			act(() => port.onDisconnect.addListener.mock.calls[0][0]())
+			act(() => vi.advanceTimersByTime(500))
+			expect(chrome.runtime.connect).toHaveBeenCalledTimes(2)
+			const reconnected = port.onMessage.addListener.mock.calls[1][0]
+			reconnected({ type: 'READ_PANEL_TRAFFIC', requestId: 'read', query: { tabId: 42, origin: 'https://example.com', limit: 5 } })
+			expect(port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'PANEL_TRAFFIC', requestId: 'read', entries: [expect.objectContaining({ request: expect.objectContaining({ url: 'https://example.com/api' }) })] }))
+		} finally {
+			unmount()
+			vi.useRealTimers()
+		}
+	})
+
 	it('registers the panel for its tab and reports the logging state', () => {
 		renderHook(() => usePanelListener(meta))
 

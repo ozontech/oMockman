@@ -24,6 +24,9 @@ export function getContentPort(): chrome.runtime.Port {
 		w.__MOCKMAN_CONTENT_PORT__.onDisconnect.addListener(() => {
 			void chrome.runtime.lastError
 			w.__MOCKMAN_CONTENT_PORT__ = null
+   for (const handler of messageHandlers) {
+    try { handler({ type: 'MOCKMAN_CAPTURE', enabled: false }) } catch { /* consumer already disposed */ }
+   }
 		})
 
 		if (!pageHideBound) {

@@ -11,8 +11,8 @@ export type CreateMocksTableSchemaParams = {
 	isDark: boolean
 	allMocksEnabled: boolean
 	handleToggleAllMocks: () => void
-	editCol: { id: string; name: string } | null
-	setEditCol: (v: { id: string; name: string } | null) => void
+	editCol: { id: string; name: string; originalName?: string } | null
+	setEditCol: (v: { id: string; name: string; originalName?: string } | null) => void
 	expanded: Set<string>
 	toggleExpanded: (id: string) => void
 	expandToFirstActive: (collectionId: string) => void
@@ -46,7 +46,7 @@ export type CreateMocksTableSchemaParams = {
 		deleteMock: (mock: IMockResponse) => void
 	}
 	collectionActions: {
-		renameCollection: (collectionId: string, name: string) => void
+		renameCollection: (collectionId: string, name: string, originalName?: string) => void | Promise<boolean>
 		createCollection: (parentId: string | null) => void
 		deleteCollection: (collectionId: string) => void
 		toggleCollectionMocking: (collectionId: string, active: boolean) => void

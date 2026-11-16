@@ -209,7 +209,7 @@ export function applyXhrWrapper(): void {
 			const asyncFlag = _async !== false
 			xhr.__mm = {
 				method: String(_method || 'GET').toUpperCase(),
-				url: String(_url || ''),
+				url: new URL(String(_url || ''), document.baseURI).href,
 				headers: {},
 				async: asyncFlag,
 			}
@@ -408,7 +408,7 @@ export function applyXhrWrapper(): void {
 				else send()
 			}
 
-			resolveMock(meta.method, meta.url, id)
+			resolveMock(meta.method, meta.url, id, typeof body === 'string' && body.length <= 1024 * 1024 ? body : undefined)
 				.then((mock) => {
 					if (mock?.network) {
 						sendChanged(mock)

@@ -7,10 +7,10 @@ type Listener = (...args: unknown[]) => unknown
 
 interface PortStub {
 	name: string
-	sender?: { tab?: { id: number } }
+	sender?: Omit<chrome.runtime.MessageSender, 'tab'> & { tab?: { id?: number } }
 	postMessage: ReturnType<typeof vi.fn>
-	onMessage: { addListener: (cb: Listener) => void; fire: (msg: unknown) => void }
-	onDisconnect: { addListener: (cb: Listener) => void; fire: () => void }
+	onMessage: { addListener: (cb: Listener) => void; removeListener: (cb: Listener) => void; fire: (msg: unknown) => void }
+	onDisconnect: { addListener: (cb: Listener) => void; removeListener: (cb: Listener) => void; fire: () => void }
 }
 
 const makePort = (name: string, tabId?: number): PortStub => {
@@ -22,10 +22,12 @@ const makePort = (name: string, tabId?: number): PortStub => {
 		postMessage: vi.fn(),
 		onMessage: {
 			addListener: (cb) => messageListeners.push(cb),
+			removeListener: (cb) => { const index = messageListeners.indexOf(cb); if (index >= 0) messageListeners.splice(index, 1) },
 			fire: (msg) => messageListeners.forEach((cb) => cb(msg)),
 		},
 		onDisconnect: {
 			addListener: (cb) => disconnectListeners.push(cb),
+			removeListener: (cb) => { const index = disconnectListeners.indexOf(cb); if (index >= 0) disconnectListeners.splice(index, 1) },
 			fire: () => disconnectListeners.forEach((cb) => cb()),
 		},
 	}
@@ -110,6 +112,24 @@ const CONTENT_SENDER = {
 } as chrome.runtime.MessageSender
 
 describe('background router', () => {
+	it('reads Logs only through a trusted panel port for the selected tab', async () => {
+		const { handleCaptureCommand } = await import('@/background/capture')
+		const access = { scope: 'agent', tabId: 42, origin: 'https://example.com', authorize: async () => {} }
+		const port = makePort('mockman-panel')
+		port.sender = EXTENSION_SENDER
+		connect(port)
+		port.onMessage.fire({ type: 'REGISTER_PANEL', tabId: 42 })
+		port.postMessage.mockImplementation((message) => {
+			if (message.type === 'READ_PANEL_TRAFFIC') {
+				expect(message.query).toMatchObject({ tabId: 42, origin: access.origin })
+				port.onMessage.fire({ type: 'PANEL_TRAFFIC', requestId: message.requestId, entries: [] })
+			}
+		})
+		expect(await handleCaptureCommand('search_requests', { method: '', path: '', limit: 5 }, access)).toMatchObject({ source: 'logs', entries: [] })
+		port.sender = CONTENT_SENDER
+		expect(await handleCaptureCommand('search_requests', { method: '', path: '', limit: 5 }, access)).toMatchObject({ source: 'background' })
+	})
+
 	beforeEach(async () => {
 		vi.resetModules()
 		connectListeners.length = 0

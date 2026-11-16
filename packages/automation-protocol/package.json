@@ -1,0 +1,27 @@
+{
+  "name": "@mockman/automation-protocol",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-independent Mockman automation contract",
+  "exports": {
+    ".": "./index.js",
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "index.js",
+    "schemas",
+    "README.md",
+    "index.d.ts"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "jsonschema": "1.5.0"
+  },
+  "types": "./index.d.ts"
+}

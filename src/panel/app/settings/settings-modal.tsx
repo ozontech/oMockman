@@ -3,6 +3,9 @@ import { Button, Icon, Modal } from 'semantic-ui-react'
 
 import { useGlobalStore } from '../store'
 
+import { ConnectionDot } from './connection-indicator'
+import { useConnectionIndicators } from './connection-status'
+import { MCPTab } from './tabs/mcp-tab'
 import { AITab } from './tabs/ai-tab'
 import { EnvTab } from './tabs/env-tab'
 import { OtherTab } from './tabs/other-tab'
@@ -15,6 +18,7 @@ import { modalHeaderSurface, modalSurface } from '@/panel/app/blocks'
 export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, initialNav }) => {
 	const isDark = useGlobalStore((g) => g.resolvedScheme === 'dark')
 	const t = useGlobalStore((g) => g.t)
+	const indicators = useConnectionIndicators()
 
 	const [nav, setNav] = useState<NavItem>(initialNav ?? 'ai')
 	const [closing, setClosing] = useState(false)
@@ -38,6 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, ini
 
 	const navItems: SettingsNavEntry[] = [
 		{ id: 'ai', label: t.settingsNav_ai, icon: 'magic' },
+		{ id: 'mcp', label: 'MCP', icon: 'plug' },
 		{ id: 'env', label: t.settingsNav_env, icon: 'globe' },
 		{ id: 'sites', label: t.settingsNav_sites, icon: 'shield' },
 		{ id: 'other', label: t.settingsNav_other, icon: 'sliders' },
@@ -77,6 +82,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, ini
 							>
 								<Icon name={item.icon as never} />
 								{item.label}
+								{(item.id === 'mcp' || item.id === 'ai') && <ConnectionDot indicator={indicators[item.id]} />}
 							</button>
 						))}
 					</nav>
@@ -85,6 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, ini
 						{nav === 'ai' && <AITab isDark={isDark} />}
 						{nav === 'env' && <EnvTab isDark={isDark} />}
 						{nav === 'sites' && <SitesTab isDark={isDark} />}
+						{nav === 'mcp' && <MCPTab />}
 						{nav === 'other' && <OtherTab isDark={isDark} />}
 					</div>
 				</div>

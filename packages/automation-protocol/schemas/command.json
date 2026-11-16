@@ -1,0 +1,1681 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mockman.example/schema/automation/v1/command.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "apply_scenario_bundle"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "bundle": {
+              "$ref": "https://mockman.example/schema/automation/v1/bundle.json"
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "expectedRevision",
+            "bundle"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "validate_scenario_bundle"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "bundle": {
+              "$ref": "https://mockman.example/schema/automation/v1/bundle.json"
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "bundle"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "start_session"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "variables": {
+              "type": "object",
+              "maxProperties": 100,
+              "propertyNames": {
+                "pattern": "^[A-Za-z0-9_]{1,128}$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "documentId",
+            "collectionId",
+            "expectedRevision"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "stop_session"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "expectedGeneration": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "documentId",
+            "runId",
+            "expectedGeneration"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "reset_scenario"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "expectedGeneration": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "documentId",
+            "runId",
+            "expectedGeneration"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_scenario_state"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_capabilities"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_request_logs"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "expectedGeneration": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "documentId",
+            "runId",
+            "expectedGeneration"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_scenario"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "collectionId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "patch_scenario"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "patch": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "delays": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "mockKey",
+                      "delayMs"
+                    ],
+                    "properties": {
+                      "mockKey": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "delayMs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 60000
+                      }
+                    }
+                  }
+                },
+                "bodyFields": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 100,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mockKey": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "path": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 32,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "not": {
+                                "enum": [
+                                  "__proto__",
+                                  "prototype",
+                                  "constructor"
+                                ]
+                              }
+                            }
+                          },
+                          "valueJson": {
+                            "type": "string",
+                            "maxLength": 1048576
+                          }
+                        },
+                        "required": [
+                          "mockKey",
+                          "path",
+                          "valueJson"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mockKey": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "path": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 32,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "not": {
+                                "enum": [
+                                  "__proto__",
+                                  "prototype",
+                                  "constructor"
+                                ]
+                              }
+                            }
+                          },
+                          "remove": {
+                            "const": true
+                          }
+                        },
+                        "required": [
+                          "mockKey",
+                          "path",
+                          "remove"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "headers": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 100,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mockKey": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+                            "maxLength": 256
+                          },
+                          "value": {
+                            "type": "string",
+                            "maxLength": 8192,
+                            "pattern": "^[^\\u0000-\\u0008\\u000a-\\u001f\\u007f]*$"
+                          }
+                        },
+                        "required": [
+                          "mockKey",
+                          "name",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mockKey": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+                            "maxLength": 256
+                          },
+                          "remove": {
+                            "const": true
+                          }
+                        },
+                        "required": [
+                          "mockKey",
+                          "name",
+                          "remove"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "scenarioEnabled": {
+                  "type": "boolean"
+                },
+                "ruleOrder": {
+                  "type": "array",
+                  "maxItems": 1000,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "ruleResponses": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "ruleId",
+                      "respond"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "ruleId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "respond": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "mockKey"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mockKey": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "network"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "network": {
+                                "const": true
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "mockStates": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 500,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "mockKey": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "priority": {
+                        "type": "integer",
+                        "minimum": -10000,
+                        "maximum": 10000
+                      }
+                    },
+                    "required": [
+                      "mockKey",
+                      "enabled"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "expectedRevision",
+            "collectionId",
+            "patch"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "delete_scenario"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "expectedRevision",
+            "collectionId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "start_capture"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "durationMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 120000
+            },
+            "method": {
+              "enum": [
+                "",
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "OPTIONS"
+              ]
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "durationMs",
+            "method",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "stop_capture"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "captureId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "captureId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_capture_requests"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "captureId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "afterId": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "captureId",
+            "afterId",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_request_details"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "captureId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requestId": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "captureId",
+            "requestId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "search_requests"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "",
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "OPTIONS"
+              ]
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "method",
+            "path",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "export_collections"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "collectionId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "preview_import"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "archive": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "const": 1
+                },
+                "bundles": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "items": {
+                    "$ref": "https://mockman.example/schema/automation/v1/bundle.json"
+                  }
+                }
+              },
+              "required": [
+                "version",
+                "bundles"
+              ],
+              "additionalProperties": false
+            },
+            "mode": {
+              "enum": [
+                "reject",
+                "replace"
+              ]
+            },
+            "prefix": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9._/-]*$"
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "archive",
+            "mode",
+            "prefix"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "import_collections"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "archive": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "const": 1
+                },
+                "bundles": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "items": {
+                    "$ref": "https://mockman.example/schema/automation/v1/bundle.json"
+                  }
+                }
+              },
+              "required": [
+                "version",
+                "bundles"
+              ],
+              "additionalProperties": false
+            },
+            "mode": {
+              "enum": [
+                "reject",
+                "replace"
+              ]
+            },
+            "prefix": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9._/-]*$"
+            },
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "archive",
+            "mode",
+            "prefix",
+            "expectedRevision"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "issuedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "command": {
+          "const": "refresh_session"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "collectionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+            },
+            "expectedRevision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "variables": {
+              "type": "object",
+              "maxProperties": 100,
+              "propertyNames": {
+                "pattern": "^[A-Za-z0-9_]{1,128}$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "expectedGeneration": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "counters": {
+              "enum": [
+                "preserve",
+                "reset"
+              ]
+            }
+          },
+          "required": [
+            "documentId",
+            "collectionId",
+            "expectedRevision",
+            "runId",
+            "expectedGeneration",
+            "counters"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "operationId",
+        "issuedAt",
+        "expiresAt",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "const": 1
+        },
+        "connectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "clientSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]*$"
+        },
+        "command": {
+          "const": "get_request_fields"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "captureId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requestId": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tabId": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "paths": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "string",
+                  "maxLength": 128
+                }
+              }
+            }
+          },
+          "required": [
+            "captureId",
+            "requestId",
+            "paths"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "connectionId",
+        "clientSessionId",
+        "command",
+        "params"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

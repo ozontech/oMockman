@@ -14,27 +14,34 @@ function extensionBase(): URL | null {
 	}
 }
 
-/**
- * Accepted only when the sender is this extension, has no tab (a content script always does),
- * comes from this extension's origin and from a page on the privileged list.
+/** Resolve only pages belonging to this extension; content scripts fail the origin check. */
+function extensionPagePath(sender: chrome.runtime.MessageSender | undefined): string | undefined {
+	const runtimeId = globalThis.chrome?.runtime?.id
+	const base = extensionBase()
+	if (!sender || !runtimeId || sender.id !== runtimeId || !base) return undefined
+	try {
+		const url = new URL(sender.url ?? '')
+		return url.protocol === base.protocol && url.host === base.host ? url.pathname : undefined
+	} catch {
+		return undefined
+	}
+}
+
+/** Only our packaged panel can access the library and secrets.
+ * The panel may run in DevTools or in a regular browser tab (sender.tab).
+ * Authenticate its extension ID and exact packaged URL, not the presence of a tab.
  */
 export function isExtensionPageSender(sender: chrome.runtime.MessageSender | undefined): boolean {
-	if (!sender) return false
+	const path = extensionPagePath(sender)
+	return path !== undefined && PRIVILEGED_PAGES.has(path)
+}
 
-	const runtimeId = (globalThis as unknown as { chrome?: typeof chrome }).chrome?.runtime?.id
-	if (!runtimeId || sender.id !== runtimeId) return false
+/** Dedicated MCP setup page may live in a tab, but receives only MCP settings commands. */
+export function isMcpSettingsSender(sender: chrome.runtime.MessageSender | undefined): boolean {
+	return extensionPagePath(sender) === '/public/html/mcp.html'
+}
 
-	if (sender.tab) return false
-
-	const base = extensionBase()
-	if (!base) return false
-	let url: URL
-	try {
-		url = new URL(sender.url ?? '')
-	} catch {
-		return false
-	}
-	if (url.protocol !== base.protocol || url.host !== base.host) return false
-
-	return PRIVILEGED_PAGES.has(url.pathname)
+/** Popup can toggle the global flag, never replace the library or read secrets. */
+export function isPopupSender(sender: chrome.runtime.MessageSender | undefined): boolean {
+	return extensionPagePath(sender) === '/public/html/popup.html'
 }

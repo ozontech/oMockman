@@ -1,159 +1,41 @@
-import { match as getMatcher } from 'path-to-regexp'
+export { getStore, getDefaultStore, getURLMapWithStore, STORE_NAME } from '@/services/library-read'
+
+import { StorageWriteError } from './storage-error'
 
 import {
 	appendMockToTree,
 	moveMockWithinTree,
-	normalizeCollectionTree,
 	removeMockFromTree,
 	moveCollectionWithinTree,
 	isDescendantCollection,
 	upsertCollectionNode,
-} from './collection-tree'
-import type { CollectionMovePayload } from './collection-tree'
-import { StorageWriteError } from './storage-error'
-
-import { createDefaultAISettings, normalizeAISettings } from '@/services/ai'
-import { createEmptyCollectionTree } from '@/interface/collection'
+} from '@/services/collection-tree'
+import type { CollectionMovePayload } from '@/services/collection-tree'
+import { getStore, getDefaultStore, getURLMapWithStore } from '@/services/library-read'
+import { sendLibraryCommand } from '@/services/library-client'
 import type { ICollectionEntry, ICollectionNode, ICollectionScenario } from '@/interface/collection'
 import type { IDynamicURLMap, IMockResponse, IStore, IURLMap } from '@/interface/mock'
 import { MessageAPI } from '@/services/message/api'
-import { getActiveEnvVars, normalizeEnv, resolveTemplate } from '@/services/env'
-import { normalizeSitePermissions } from '@/services/origin'
-import { normalizeUrl } from '@/services/url'
 import type { MockmanExportBundle } from '@/services/mock-import'
 import { genId } from '@/services/helper'
 
-export type { CollectionMovePayload } from './collection-tree'
-
-type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
-
-const getNetworkMethodMap = (): Record<Method, string[]> => ({
-	GET: [],
-	POST: [],
-	PATCH: [],
-	PUT: [],
-	DELETE: [],
-})
+export type { CollectionMovePayload } from '@/services/collection-tree'
 
 const detectDynamic = (url?: string): boolean => {
 	if (typeof url !== 'string') return false
 	return url.includes('(.*)') || url.includes('/:')
 }
 
-export const STORE_NAME = 'mockman.extension.main.db'
-
-export const getDefaultStore = (): IStore => ({
-	theme: 'light',
-	active: false,
-	mocks: [],
-	totalMocksCreated: 0,
-	collectionTree: createEmptyCollectionTree(),
-	activityInfo: { promoted: false },
-	env: {
-		activeId: 'default',
-		profiles: [{ id: 'default', name: 'default', vars: { BASE_URL: '' } }],
-	},
-	ai: createDefaultAISettings(),
-})
-
-export const getStore = (
-	name: string = STORE_NAME,
-): Promise<{
-	store: IStore
-	urlMap: IURLMap
-	dynamicUrlMap: IDynamicURLMap
-}> =>
-	new Promise((resolve) => {
-		chrome.storage.local.get([name], (res) => {
-			const raw = res[name] ?? {}
-			const merged = { ...getDefaultStore(), ...raw } as IStore & { collections?: unknown; collectionTree?: unknown }
-			const baseMocks = Array.isArray(merged.mocks) ? merged.mocks : []
-			const { tree, mocks } = normalizeCollectionTree({
-				mocks: baseMocks,
-				tree: merged.collectionTree,
-				legacy: (raw as { collections?: unknown })?.collections,
-			})
-			const store: IStore = {
-				...merged,
-				mocks,
-				collectionTree: tree,
-			}
-			delete (store as unknown as { collections?: unknown }).collections
-			const normalizedStore = normalizeSitePermissions(normalizeAISettings(normalizeEnv(store)))
-			const { urlMap, dynamicUrlMap } = getURLMapWithStore(normalizedStore)
-			resolve({ store: normalizedStore, urlMap, dynamicUrlMap })
-		})
-	})
-
-export const updateStoreInDB = (
-	store: IStore,
-): Promise<{
-	store: IStore
-	urlMap: IURLMap
-	dynamicUrlMap: IDynamicURLMap
-}> =>
-	new Promise((resolve, reject) => {
-		try {
-			const baseMocks = Array.isArray(store.mocks) ? store.mocks : []
-			const { tree, mocks } = normalizeCollectionTree({ mocks: baseMocks, tree: store.collectionTree })
-			const nextStore: IStore = {
-				...store,
-				mocks,
-				collectionTree: tree,
-			}
-			const normalizedStore = normalizeSitePermissions(normalizeAISettings(normalizeEnv(nextStore)))
-			chrome.storage.local.set({ [STORE_NAME]: normalizedStore }, () => {
-				const lastError = chrome.runtime?.lastError
-				if (lastError) {
-					reject(new StorageWriteError(lastError.message ?? 'unknown error'))
-					return
-				}
-				const { urlMap, dynamicUrlMap } = getURLMapWithStore(normalizedStore)
-				resolve({ store: normalizedStore, urlMap, dynamicUrlMap })
-			})
-		} catch (err) {
-			reject(new StorageWriteError(err instanceof Error ? err.message : String(err)))
-		}
-	})
-
-export const getURLMapWithStore = (
-	store: IStore,
-): { urlMap: IURLMap; dynamicUrlMap: IDynamicURLMap; store: IStore } => {
-	const urlMap: IURLMap = {}
-	const dynamicUrlMap: IDynamicURLMap = {}
-	const vars = getActiveEnvVars(store)
-
-	store.mocks.forEach((mock, idx) => {
-		const path = `mocks[${idx}]`
-		const effectiveUrl = normalizeUrl(resolveTemplate(mock.url, vars))
-		if (mock.dynamic) {
-			addDynamic(mock, path, effectiveUrl)
-			return
-		}
-
-		urlMap[effectiveUrl] ??= getNetworkMethodMap()
-		urlMap[effectiveUrl][mock.method as Method].push(path)
-	})
-
-	return { urlMap, dynamicUrlMap, store }
-
-	function addDynamic(mock: IMockResponse, path: string, effectiveUrl: string): void {
-		const replaced = effectiveUrl.replace('://', '-')
-		const depth = replaced.split('/').length
-
-		const matcher: IDynamicURLMap[number][0] = {
-			getterKey: path,
-			method: mock.method,
-			url: replaced,
-			match: getMatcher(replaced, { decode: decodeURIComponent }),
-		}
-
-		if (dynamicUrlMap[depth]) {
-			dynamicUrlMap[depth].push(matcher)
-		} else {
-			dynamicUrlMap[depth] = [matcher]
-		}
-	}
+export const updateStoreInDB = async (store: IStore): Promise<{ store: IStore; urlMap: IURLMap; dynamicUrlMap: IDynamicURLMap }> => {
+ try {
+  const answer = await sendLibraryCommand({ action: 'replace', expectedRevision: store.revision ?? 0, store })
+  if (!answer.ok || !answer.store) throw new StorageWriteError(answer.error ?? 'BACKGROUND_UNAVAILABLE')
+  const { urlMap, dynamicUrlMap } = getURLMapWithStore(answer.store)
+  return { store: answer.store, urlMap, dynamicUrlMap }
+ } catch (error) {
+  if (error instanceof StorageWriteError) throw error
+  throw new StorageWriteError(error instanceof Error ? error.message : String(error))
+ }
 }
 
 export const addMocks = (
@@ -291,6 +173,7 @@ export const importCollectionBundle = (
 		mappedNodes[newId] = {
 			...node,
 			id: newId,
+			automation: node.automation ? { ...node.automation, scenarioKey: `imported/${genId()}`, mockIds: Object.fromEntries(Object.entries(node.automation.mockIds).filter(([, oldId]) => mockIdMap.has(oldId)).map(([key, oldId]) => [key, mockIdMap.get(oldId) as string])) } : undefined,
 			name: node.name ?? 'Collection',
 			parentId: mapCollectionId(node.parentId) ?? null,
 			scenario: node.scenario && remapScenario(node.scenario, mockIdMap),

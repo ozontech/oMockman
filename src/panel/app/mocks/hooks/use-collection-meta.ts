@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 
+import { createSearchMatcher } from '../model/search'
+
 import type { ICollectionEntry, ICollectionTree } from '@/interface/collection'
 import type { IMockResponse } from '@/interface/mock'
 
-export function useCollectionMeta(tree: ICollectionTree, mocks: IMockResponse[]): {
+export function useCollectionMeta(tree: ICollectionTree, mocks: IMockResponse[], query = ''): {
 	mocksById: Record<string, IMockResponse>
 	collectionMockCounts: Record<string, number>
 	collectionPathMap: Record<string, string>
@@ -18,6 +20,7 @@ export function useCollectionMeta(tree: ICollectionTree, mocks: IMockResponse[])
 	}, [mocks])
 
 	const meta = useMemo(() => {
+		const matches = createSearchMatcher(query)
 		const counts: Record<string, number> = {}
 		const paths: Record<string, string> = {}
 		const hasActive: Record<string, boolean> = {}
@@ -46,7 +49,7 @@ export function useCollectionMeta(tree: ICollectionTree, mocks: IMockResponse[])
 				if (ent.type === 'mock') {
 					const mock = mocksById[ent.id]
 					if (mock) {
-						total += 1
+						if (matches(mock)) total += 1
 						if (mock.active && branchEnabled) active = true
 					}
 				} else {
@@ -73,7 +76,7 @@ export function useCollectionMeta(tree: ICollectionTree, mocks: IMockResponse[])
 			collectionBranchEnabled: branchEnabledMap,
 			collectionToggleAllowed: toggleAllowedMap,
 		}
-	}, [tree.nodes, tree.root, mocksById])
+	}, [tree.nodes, tree.root, mocksById, query])
 
 	return { mocksById, ...meta }
 }

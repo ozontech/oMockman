@@ -1,5 +1,6 @@
+import { matchesConditions } from '@/services/mock-conditions'
 import type { IDynamicURLMap, ILog, IMockResponse, IStore, IURLMap } from '@/interface/mock'
-import { isCollectionActive } from '@/panel/app/service/collection-tree'
+import { isCollectionActive } from '@/services/collection-tree'
 import { normalizeUrl } from '@/services/url'
 import { getByPath } from '@/services/helper'
 
@@ -22,17 +23,18 @@ export function getMockPaths(
 	const sanitized = normalized.replace(/:\/\//, '-')
 	const segCount = sanitized.split('/').length
 	const candidates = maps.dynamicUrlMap[segCount] ?? []
-	const dynMatch = (candidates as IDynamicRoute[]).find((route) => route.method === method && !!route.match(sanitized))
-	return dynMatch ? [dynMatch.getterKey] : []
+	return (candidates as IDynamicRoute[]).filter((route) => route.method === method && !!route.match(sanitized)).map(route => route.getterKey)
 }
 
 export function getActiveMockWithPath(
 	paths: string[],
 	store: IStore,
+	request?: { url: string; body?: string },
 ): { mock: IMockResponse | null; path: string | null } {
-	for (const p of paths) {
+	const ordered = [...paths].sort((a, b) => ((getByPath(store, b, null) as IMockResponse | null)?.priority ?? 0) - ((getByPath(store, a, null) as IMockResponse | null)?.priority ?? 0))
+	for (const p of ordered) {
 		const m = getByPath(store, p, null) as IMockResponse | null
-		if (!m || !m.active) continue
+		if (!m || !m.active || (m.when && (!request || !matchesConditions(m, store, request.url, request.body)))) continue
 		if (!store.collectionTree || isCollectionActive(store.collectionTree, m.collectionId ?? null)) {
 			return { mock: m, path: p }
 		}
@@ -57,6 +59,6 @@ export function markMockedInLog(
 		urlMap: state.urlMap,
 		dynamicUrlMap: state.dynamicUrlMap,
 	})
-	const { path } = getActiveMockWithPath(paths, state.store)
+	const { path } = getActiveMockWithPath(paths, state.store, { url: log.request.url, body: log.request.body })
 	log.mockPath = path ?? undefined
 }

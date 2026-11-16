@@ -61,6 +61,7 @@ const createInjectSide = () => {
 }
 
 describe('contentScript/bridge', () => {
+
 	let logs: unknown[]
 
 	beforeEach(() => {
@@ -73,6 +74,29 @@ describe('contentScript/bridge', () => {
 		bridge.attach(injectSide.port)
 		return { bridge, injectSide }
 	}
+
+	it('reports repeated ordinary mock hits without sequential counters', async () => {
+		const scenarios = new ScenarioRuntime(true)
+		const bridge = new InjectBridge({ getState: () => makeState(), scenarios, onLog: () => {} })
+		const injectSide = createInjectSide()
+		bridge.attach(injectSide.port)
+		injectSide.ask('GET', 'https://example.com/api/users', 1)
+		injectSide.ask('GET', 'https://example.com/api/users', 2)
+		injectSide.ask('GET', 'https://example.com/api/missing', 3)
+		await flush()
+
+		expect(injectSide.received).toMatchObject([
+			{ id: 1, mock: { status: 201, response: '{"users":[]}' }, noCache: true },
+			{ id: 2, mock: { status: 201, response: '{"users":[]}' }, noCache: true },
+			{ id: 3, mock: null, noCache: true },
+		])
+		expect(scenarios.counts()).toEqual({})
+		expect(scenarios.logs().entries).toMatchObject([
+			{ outcome: 'mock', mockId: 'mock-1', ruleId: null, callNumber: null },
+			{ outcome: 'mock', mockId: 'mock-1', ruleId: null, callNumber: null },
+			{ outcome: 'unmatched', mockId: null, ruleId: null, callNumber: null },
+		])
+	})
 
 	it('answers a matched request without leaking the mock url', async () => {
 		const { injectSide } = build()

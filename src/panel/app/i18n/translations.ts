@@ -240,6 +240,9 @@ export interface Translations {
 	mock_openWindow: string
 	mock_close: string
 	mock_fieldName: string
+	mock_fieldCollection: string
+	mock_noCollection: string
+	mock_collectionNoResults: string
 	mock_namePlaceholder: string
 	mock_fieldDesc: string
 	mock_descPlaceholder: string
@@ -278,6 +281,7 @@ export interface Translations {
 	toast_envSaved: string
 	toast_settingsSaved: string
 	toast_storageWriteFailed: (reason: string) => string
+	toast_revisionConflict: string
 
 	// Add mock panes (tabs/buttons inside modal)
 	pane_tabResponse: string
@@ -613,6 +617,9 @@ export const en: Translations = {
 	mock_openWindow: 'Open in separate window',
 	mock_close: 'Close',
 	mock_fieldName: 'Name',
+	mock_fieldCollection: 'Collection',
+	mock_noCollection: 'No collection',
+	mock_collectionNoResults: 'No collections found',
 	mock_namePlaceholder: 'Empty task list',
 	mock_fieldDesc: 'Description',
 	mock_descPlaceholder: 'No tasks for today, to check the empty screen',
@@ -650,6 +657,7 @@ export const en: Translations = {
 	toast_envSaved: 'Environment saved.',
 	toast_settingsSaved: 'Settings saved.',
 	toast_storageWriteFailed: (reason) => `Could not save to extension storage: ${reason}`,
+	toast_revisionConflict: "The library changed while you were editing. Your draft has not been saved. Copy your changes, reopen the editor and apply them to the latest version.",
 
 	pane_tabResponse: 'Response Body',
 	pane_tabHeaders: 'Response Headers',
@@ -987,6 +995,9 @@ export const ru: Translations = {
 	mock_openWindow: 'Открыть в отдельном окне',
 	mock_close: 'Закрыть',
 	mock_fieldName: 'Название',
+	mock_fieldCollection: 'Коллекция',
+	mock_noCollection: 'Без коллекции',
+	mock_collectionNoResults: 'Коллекции не найдены',
 	mock_namePlaceholder: 'Пустой список заданий',
 	mock_fieldDesc: 'Описание',
 	mock_descPlaceholder: 'Заданий на сегодня нет — проверяем пустой экран',
@@ -1024,6 +1035,7 @@ export const ru: Translations = {
 	toast_envSaved: 'Среда сохранена.',
 	toast_settingsSaved: 'Настройки сохранены.',
 	toast_storageWriteFailed: (reason) => `Не удалось сохранить в хранилище расширения: ${reason}`,
+	toast_revisionConflict: "Библиотека изменилась во время редактирования. Черновик не сохранён. Скопируйте свои правки, откройте редактор заново и примените их к актуальной версии.",
 
 	pane_tabResponse: 'Тело ответа',
 	pane_tabHeaders: 'Заголовки ответа',

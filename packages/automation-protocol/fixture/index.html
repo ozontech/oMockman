@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<title>Mockman: проверка сценариев</title>
+<h1>Проверка сценариев MCP</h1>
+<p>Без моков: нет товаров и заданий, раздел скрыт, сохранение успешно.</p>
+<button id="items">Открыть товары</button>
+<button id="configuration">Обновить доступ к разделу</button>
+<button id="tasks">Загрузить задания</button>
+<button id="save">Сохранить</button>
+<section id="returns" hidden><h2>Возвраты</h2></section>
+<output id="status" aria-live="polite"></output>
+<pre id="task-list"></pre>
+<dialog id="modal"><h2>Товары</h2><pre id="item-list"></pre><form method="dialog"><button>Закрыть</button></form></dialog>
+<script type="module">
+const byId = (id) => document.getElementById(id)
+async function request(path, method = 'GET') {
+  const response = await fetch(`/api/${path}`, { method })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message ?? `HTTP ${response.status}`)
+  return data
+}
+function action(id, callback) {
+  byId(id).addEventListener('click', async () => {
+    byId('status').textContent = ''
+    try { await callback() } catch (error) { byId('status').textContent = error.message }
+  })
+}
+action('items', async () => {
+  const data = await request('items')
+  byId('item-list').textContent = data.items.map((item) =>
+    `${item.id}: ${Date.parse(item.expiresOn) < Date.now() ? 'Просрочен' : 'Годен'}`
+  ).join('\n') || 'Нет товаров'
+  byId('modal').showModal()
+})
+action('configuration', async () => {
+  const data = await request('configuration')
+  byId('returns').hidden = !(data.features.returns && data.permissions.includes('returns:read'))
+})
+action('tasks', async () => {
+  const data = await request('tasks')
+  byId('task-list').textContent = JSON.stringify(data.items, null, 2)
+})
+action('save', async () => {
+  await request('save', 'POST')
+  byId('status').textContent = 'Сохранено'
+})
+</script>
+</html>

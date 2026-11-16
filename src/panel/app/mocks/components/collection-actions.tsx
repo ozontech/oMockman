@@ -121,6 +121,7 @@ export const CollectionActions: React.FC<CollectionActionsProps> = ({
 			</Button.Group>
 
 			<Modal
+				data-testid="collection-delete-modal"
 				size="tiny"
 				open={confirmOpen}
 				onClose={() => setConfirmOpen(false)}

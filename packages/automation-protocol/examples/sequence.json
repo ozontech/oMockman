@@ -1,0 +1,54 @@
+{
+  "scenarioKey": "examples/sequence",
+  "collection": {
+    "name": "sequence"
+  },
+  "mocks": [
+    {
+      "key": "first",
+      "method": "GET",
+      "url": "https://app.example.test/api/tasks",
+      "response": {
+        "status": 200,
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": "{\"items\": [{\"id\": \"task-1\"}]}"
+      }
+    },
+    {
+      "key": "empty",
+      "method": "GET",
+      "url": "https://app.example.test/api/tasks",
+      "response": {
+        "status": 200,
+        "headers": [],
+        "body": "{\"items\":[]}"
+      }
+    }
+  ],
+  "scenario": {
+    "enabled": true,
+    "rules": [
+      {
+        "key": "first",
+        "method": "GET",
+        "url": "https://app.example.test/api/tasks",
+        "respond": {
+          "mockKey": "first"
+        }
+      },
+      {
+        "key": "rest",
+        "method": "GET",
+        "url": "https://app.example.test/api/tasks",
+        "respond": {
+          "mockKey": "empty"
+        }
+      }
+    ]
+  }
+}

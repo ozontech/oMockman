@@ -207,10 +207,20 @@ describe('useCollectionActions', () => {
 	it('renames a collection', async () => {
 		const { result } = renderHook(() => useCollectionActions())
 
-		act(() => result.current.renameCollection('c1', 'Renamed'))
+		await act(async () => { await result.current.renameCollection('c1', 'Renamed') })
 
 		await waitFor(() => expect(updateStoreInDB).toHaveBeenCalledTimes(1))
 		expect((updateStoreInDB.mock.calls[0][0] as IStore).collectionTree.nodes.c1.name).toBe('Renamed')
+	})
+
+	it('rejects renaming a collection changed since editing began', async () => {
+		const { result } = renderHook(() => useCollectionActions())
+		let saved = true
+		await act(async () => { saved = await result.current.renameCollection('c1', 'Draft', 'Old name') })
+		expect(saved).toBe(false)
+		expect(updateStoreInDB).not.toHaveBeenCalled()
+		expect(useChromeStore.getState().store.collectionTree.nodes.c1.name).toBe('Parent')
+		expect(toastError).toHaveBeenCalled()
 	})
 
 	it('deletes a collection with its mocks', async () => {

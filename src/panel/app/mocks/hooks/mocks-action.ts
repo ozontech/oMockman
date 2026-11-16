@@ -4,6 +4,7 @@ import { toast } from 'react-toastify'
 
 import { describeSaveError, persistStoreChange, storeActions } from '../../service'
 import type { CollectionMovePayload } from '../../service'
+import { StorageWriteError } from '../../service/storage-error'
 import { useGlobalStore, useChromeStore } from '../../store'
 
 import type { IMockResponse, IStore } from '@/interface/mock'
@@ -176,10 +177,21 @@ export const useCollectionActions = () => {
 	)
 
 	const renameCollection = useCallback(
-		(collectionId: string, name: string): void => {
-			persist((current) => storeActions.renameCollection(current, collectionId, name))
-		},
-		[persist],
+		async (collectionId: string, name: string, originalName?: string): Promise<boolean> => {
+   try {
+    await persistStoreChange({ updatedStore: () => {
+     const current = useChromeStore.getState().store
+     if (originalName !== undefined && current.collectionTree.nodes[collectionId]?.name !== originalName) throw new StorageWriteError('REVISION_CONFLICT')
+     return storeActions.renameCollection(current, collectionId, name)
+    }, setStoreProperties, tabId: tab?.id, applyMocksNow: false })
+    return true
+   } catch (error) {
+    const t = useGlobalStore.getState().t
+    toast.error(describeSaveError(error, t, t.toast_collectionCannotUpdate))
+    return false
+   }
+  },
+  [setStoreProperties, tab?.id],
 	)
 
 	const deleteCollection = useCallback(

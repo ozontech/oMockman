@@ -1,6 +1,9 @@
+
 import type { IAISettings } from './ai'
 import type { ICollectionTree } from './collection'
 import type { IMethod, MethodEnum } from './network'
+
+import type { MockConditions } from '@mockman/automation-protocol'
 
 export type Headers = Array<{ name: string; value: string }>
 
@@ -74,6 +77,8 @@ export interface IMockApply {
 }
 
 export interface IMockResponse {
+	when?: MockConditions
+	priority?: number
 	/** Draft only, never persisted: the source log's response was too large to capture. */
 	responseTooLargeBytes?: number
 	method: MethodEnum
@@ -105,6 +110,8 @@ export interface IMockResponse {
 export type IMockResponseRaw = Partial<IMockResponse>
 
 export interface IStore {
+	/** Optimistic concurrency version, assigned only by background. Legacy stores start at 0. */
+	revision?: number
 	active: boolean
 	theme: 'dark' | 'light'
 	mocks: IMockResponse[]

@@ -55,7 +55,7 @@ export type ISendResult =
 export type BridgeInjectMessage =
 	| { k: 'ack' }
 	/** `logId` ties the answer to the request's log, so the panel can tell which scenario rule served it. */
-	| { k: 'match'; id: number; method: string; url: string; logId?: string }
+	| { k: 'match'; id: number; method: string; url: string; logId?: string; body?: string }
 	| { k: 'log'; id?: string; message: unknown }
 	| { k: 'send:res'; id: number; result: ISendResult }
 
@@ -65,4 +65,4 @@ export type BridgeContentMessage =
 	| { k: 'send'; id: number; request: ISendRequest }
 	| { k: 'epoch'; epoch: number }
 	| { k: 'logging'; enabled: boolean }
-	| { k: 'gate'; open: boolean }
+	| { k: 'gate'; open: boolean; needsBody?: boolean }

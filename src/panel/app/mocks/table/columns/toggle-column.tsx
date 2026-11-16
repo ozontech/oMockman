@@ -90,7 +90,7 @@ export function createToggleColumn(params: CreateMocksTableSchemaParams): TableS
 									/>
 								) : null}
 							</span>
-							<span className={`${s.collectionCounter} ${isDark ? s.collectionCounterDark : ''}`}>
+							<span data-testid="collection-counter" className={`${s.collectionCounter} ${isDark ? s.collectionCounterDark : ''}`}>
 								{mocksCount}
 							</span>
 							<Button

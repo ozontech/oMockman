@@ -15,20 +15,14 @@ const store = (): IStore => ({
 	env: { activeId: 'default', profiles: [{ id: 'default', name: 'default', vars: {} }] },
 })
 
-const stubStorage = (set: (items: unknown, cb: () => void) => void, lastError?: { message?: string }) => {
-	const runtime: { lastError?: { message?: string } } = {}
-	vi.stubGlobal('chrome', {
-		runtime,
-		storage: {
-			local: {
-				set: (items: unknown, cb: () => void) => set(items, () => {
-					runtime.lastError = lastError
-					cb()
-					runtime.lastError = undefined
-				}),
-			},
-		},
-	})
+const stubStorage = (send: (items: unknown, cb: () => void) => void, lastError?: { message?: string }) => {
+ const runtime: { lastError?: { message?: string }; sendMessage?: unknown } = {}
+ runtime.sendMessage = (message: { store: IStore }, cb: (value: unknown) => void) => send(message, () => {
+  runtime.lastError = lastError
+  cb({ ok: true, store: message.store })
+  runtime.lastError = undefined
+ })
+ vi.stubGlobal('chrome', { runtime })
 }
 
 describe('updateStoreInDB', () => {
@@ -48,7 +42,16 @@ describe('updateStoreInDB', () => {
 		expect((error as StorageWriteError).reason).toBe('QUOTA_BYTES quota exceeded')
 	})
 
-	it('rejects when storage throws synchronously', async () => {
+ it('preserves the revision conflict and never falls back to a direct storage write', async () => {
+  const set = vi.fn()
+  vi.stubGlobal('chrome', { storage: { local: { set } }, runtime: {
+   sendMessage: (_message: unknown, cb: (answer: unknown) => void) => cb({ ok: false, error: 'REVISION_CONFLICT' }),
+  } })
+  await expect(updateStoreInDB(store())).rejects.toMatchObject({ reason: 'REVISION_CONFLICT' })
+  expect(set).not.toHaveBeenCalled()
+ })
+
+	it('rejects when messaging throws synchronously', async () => {
 		stubStorage(() => {
 			throw new Error('Extension context invalidated.')
 		})
