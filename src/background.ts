@@ -1,6 +1,10 @@
+import { setPanelTrafficReader, navigateCaptures, onCaptureChanged, isMcpCaptureEnabled, recordCapture, clearTabCaptures, revokeCapturePermissions } from '@/background/capture'
+import type { Detail } from '@/background/capture'
+import { handleLibraryCommand } from '@/background/library-handler'
+import { handleMcpPanelCommand } from '@/background/mcp'
 import { tryHandleAIMessage } from '@/background/ai-handler'
 import { migrateLegacyKeys } from '@/background/secrets'
-import { isExtensionPageSender } from '@/background/sender'
+import { isExtensionPageSender, isMcpSettingsSender, isPopupSender } from '@/background/sender'
 import { getSecuritySettings, STORE_KEY } from '@/background/store-access'
 import { clearHeaders, getHeaders, setHeaders } from '@/background/headers-store'
 import { fetchOpenApiSpec } from '@/background/openapi-fetch'
@@ -24,6 +28,7 @@ moveKeysOutOfStore()
 try {
 	chrome.storage.onChanged.addListener((changes, areaName) => {
 		if (areaName !== 'local' || !changes?.[STORE_KEY]) return
+        revokeCapturePermissions((changes[STORE_KEY].newValue as { sitePermissions?: Record<string, unknown> } | undefined)?.sitePermissions ?? {})
 		const providers = (changes[STORE_KEY].newValue as { ai?: { providers?: Array<{ apiKey?: unknown }> } } | undefined)?.ai?.providers
 		if (Array.isArray(providers) && providers.some((provider) => typeof provider?.apiKey === 'string')) moveKeysOutOfStore()
 	})
@@ -38,7 +43,8 @@ const contentPortsByTab = new Map<number, Set<chrome.runtime.Port>>()
 const loggingEnabledByTab = new Map<number, boolean>()
 
 const isCaptureEnabled = (tabId: number): boolean =>
-	(panelPortsByTab.get(tabId)?.size ?? 0) > 0 && loggingEnabledByTab.get(tabId) !== false
+	((panelPortsByTab.get(tabId)?.size ?? 0) > 0 && loggingEnabledByTab.get(tabId) !== false) || isMcpCaptureEnabled(tabId)
+
 
 const pushCaptureState = (tabId: number): void => {
 	const message = { type: 'MOCKMAN_CAPTURE', enabled: isCaptureEnabled(tabId) }
@@ -52,6 +58,8 @@ const pushCaptureState = (tabId: number): void => {
 		void 0
 	}
 }
+
+onCaptureChanged(pushCaptureState, isCaptureEnabled)
 
 const isValidTabId = (tabId: number | undefined): tabId is number =>
 	typeof tabId === 'number' && tabId >= 0
@@ -96,6 +104,7 @@ const postToContentByTab = (tabId: number, message: object): void => {
 	for (const p of ports) postToPort(p, message)
 }
 
+
 const postToAllContent = (message: object): void => {
 	for (const ports of contentPortsByTab.values()) {
 		for (const p of ports) postToPort(p, message)
@@ -108,9 +117,34 @@ const postToPanelsByTab = (tabId: number, message: object): void => {
 	for (const p of ports) postToPort(p, message)
 }
 
-const forwardLogToPanelByTab = (tabId: number, message: IEventMessage): void => {
+setPanelTrafficReader(async (query) => {
+	const ports = [...(panelPortsByTab.get(query.tabId) ?? [])].filter((port) => isExtensionPageSender(port.sender))
+	if (!ports.length) return null
+	const results = await Promise.all(ports.map((port) => new Promise<Detail[] | null>((resolve) => {
+		const requestId = crypto.randomUUID()
+		const finish = (entries: Detail[] | null) => {
+			clearTimeout(timer)
+			port.onMessage.removeListener(listener)
+			port.onDisconnect.removeListener(disconnected)
+			resolve(entries)
+		}
+		const listener = (message: { type?: string; requestId?: string; entries?: Detail[] }) => {
+			if (message.type === 'PANEL_TRAFFIC' && message.requestId === requestId && Array.isArray(message.entries))
+				finish(message.entries.slice(0, 50))
+		}
+		const disconnected = () => finish(null)
+		const timer = setTimeout(disconnected, 1000)
+		port.onMessage.addListener(listener)
+		port.onDisconnect.addListener(disconnected)
+		try { port.postMessage({ type: 'READ_PANEL_TRAFFIC', requestId, query }) } catch { finish(null) }
+	})))
+	const available = results.filter((entries): entries is Detail[] => entries !== null)
+	return available.length ? available.flat().sort((a, b) => a.time - b.time).slice(-(query.limit ?? 1)) : null
+})
+
+const forwardLogToPanelByTab = (tabId: number, message: IEventMessage, sender?: chrome.runtime.MessageSender): void => {
 	if (message.type !== 'LOG' || message.to !== 'PANEL') return
-	const panelLogMessage: IEventMessage = { ...message, sourceTabId: tabId }
+	const panelLogMessage: IEventMessage = { ...message, sourceTabId: tabId, sourceOrigin: canonicalOrigin(sender?.url), sourceDocumentId: sender?.documentId ?? message.sourceDocumentId }
 	postToPanelsByTab(tabId, panelLogMessage)
 }
 
@@ -178,7 +212,8 @@ chrome.runtime.onConnect.addListener((port) => {
 	port.onMessage.addListener((raw) => {
 		const msg = raw as IEventMessage
 		if (msg && typeof tabId === 'number') {
-			forwardLogToPanelByTab(tabId, msg)
+			forwardLogToPanelByTab(tabId, msg, port.sender)
+            if (port.sender?.frameId === 0 && msg.type === 'LOG') recordCapture(tabId, canonicalOrigin(port.sender.url), msg.message, port.sender?.documentId ?? (typeof msg.sourceDocumentId === 'string' ? msg.sourceDocumentId.slice(0, 128) : null))
 		}
 	})
 
@@ -208,7 +243,8 @@ const originByTab = new Map<number, string | null>()
 
 try {
 	chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-		if (!changeInfo.url && !tab?.url) return
+		if (changeInfo.url || tab?.url) navigateCaptures(tabId, canonicalOrigin(changeInfo.url ?? tab?.url))
+        if (!changeInfo.url && !tab?.url) return
 		const next = canonicalOrigin(changeInfo.url ?? tab?.url)
 		if (originByTab.get(tabId) === next) return
 		originByTab.set(tabId, next)
@@ -217,6 +253,7 @@ try {
 
 	chrome.tabs.onRemoved.addListener((tabId) => {
 		originByTab.delete(tabId)
+        clearTabCaptures(tabId)
 	})
 } catch {
 	void 0
@@ -228,7 +265,8 @@ const CONTENT_ALLOWED_TYPES = new Set(['GET_RESPONSE_HEADERS', 'PANEL_GET_ORIGIN
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	const senderTabId = sender.tab?.id
 	if (request && isValidTabId(senderTabId)) {
-		forwardLogToPanelByTab(senderTabId, request as IEventMessage)
+		forwardLogToPanelByTab(senderTabId, request as IEventMessage, sender)
+        if (sender.frameId === 0 && request.type === 'LOG') recordCapture(senderTabId, canonicalOrigin(sender.url), request.message, sender.documentId ?? (typeof request.sourceDocumentId === 'string' ? request.sourceDocumentId.slice(0, 128) : null))
 	}
 
 	if (!isObject(request) || typeof request.type !== 'string') {
@@ -236,6 +274,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	}
 
 	const fromExtensionPage = isExtensionPageSender(sender)
+	if (request.type === 'LIBRARY_COMMAND' && (fromExtensionPage || (isPopupSender(sender) && request.action === 'set_active'))) {
+		void handleLibraryCommand(request, fromExtensionPage).then(sendResponse)
+		return true
+	}
+	if (request.type === 'MOCKMAN_MCP' && (fromExtensionPage || isMcpSettingsSender(sender))) {
+		void handleMcpPanelCommand(request).then(sendResponse, (error: unknown) => sendResponse({ error: error instanceof Error ? error.message : 'MCP settings failed' }))
+		return true
+	}
 	if (!fromExtensionPage && !CONTENT_ALLOWED_TYPES.has(request.type)) {
 		return undefined
 	}

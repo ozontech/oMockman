@@ -1,0 +1,24 @@
+{
+  "name": "@mockman/mcp-server",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "mockman-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@mockman/automation-protocol": "0.2.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "ws": "8.22.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.3"
+  }
+}

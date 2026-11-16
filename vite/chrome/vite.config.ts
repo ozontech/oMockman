@@ -36,6 +36,7 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				panel: path.resolve(projectRoot, 'public/html/panel.html'),
+				mcp: path.resolve(projectRoot, 'public/html/mcp.html'),
 				devtool: path.join(projectRoot, 'public/html/devtool.html'),
 				popup: path.join(projectRoot, 'public/html/popup.html'),
 				content_script: path.join(src, 'content-script.ts'),

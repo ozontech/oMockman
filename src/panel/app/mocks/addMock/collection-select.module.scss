@@ -1,0 +1,54 @@
+.field {
+	min-width: 0;
+}
+
+.dark {
+	> label {
+		color: var(--text) !important;
+	}
+
+	.select:global(.ui.selection.dropdown) {
+		background: #222222;
+		color: var(--text);
+		border-color: #444;
+
+		:global(input.search) {
+			color: inherit;
+		}
+
+		:global(.menu) {
+			background: #222222;
+			border-color: #444;
+		}
+
+		:global(.menu > .item) {
+			color: var(--text);
+			border-top-color: #444;
+		}
+
+		:global(.menu > .item:hover),
+		:global(.menu > .selected.item) {
+			background: #3a3a3a;
+		}
+
+		:global(.menu > .message) {
+			color: var(--muted-text);
+		}
+	}
+}
+
+.select:global(.ui.selection.dropdown) {
+	min-width: 0;
+
+	> :global(.text) {
+		max-width: calc(100% - 28px);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(.menu > .item) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+}

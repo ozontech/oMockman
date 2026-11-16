@@ -17,8 +17,8 @@ build-chrome: ## Build the Chrome (MV3) package into dist/chrome
 build-firefox: ## Build the Firefox (MV2) package into dist/firefox
 	npm run build:firefox
 
-pack: ## Build and zip the Firefox add-on
-	npm run pack:firefox
+pack: ## Build and package Chrome, Firefox and the MCP server
+	npm run pack
 
 test: ## Run unit tests
 	npm test

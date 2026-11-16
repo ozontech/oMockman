@@ -1,4 +1,4 @@
-export type NavItem = 'ai' | 'env' | 'sites' | 'other'
+export type NavItem = 'ai' | 'env' | 'sites' | 'other' | 'mcp'
 
 export interface SettingsModalProps {
 	open: boolean

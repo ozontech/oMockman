@@ -39,6 +39,12 @@ describe('popup controls', () => {
 	let changeListener: (() => void) | undefined
 
 	const deps = (overrides: Partial<PopupDeps> = {}): PopupDeps => ({
+		setActive: async (active) => {
+			const current = items[STORE_KEY]
+			if (!current) return false
+			items[STORE_KEY] = { ...(current as object), active }
+			return true
+		},
 		storage: {
 			get: (keys, cb) => cb(Object.fromEntries(keys.filter((key) => key in items).map((key) => [key, items[key]]))),
 			set: (next, cb) => {
@@ -49,7 +55,7 @@ describe('popup controls', () => {
 		onStoreChanged: (listener) => {
 			changeListener = listener
 		},
-		version: '2.4.0',
+		version: '2.5.0',
 		lang: 'ru',
 		...overrides,
 	})
@@ -76,7 +82,7 @@ describe('popup controls', () => {
 		expect(toggle().checked).toBe(true)
 		expect(toggle().disabled).toBe(false)
 		expect(label()).toBe('Моки включены')
-		expect(document.getElementById('version')?.textContent).toBe('v2.4.0')
+		expect(document.getElementById('version')?.textContent).toBe('v2.5.0')
 		expect((document.getElementById('docs') as HTMLAnchorElement).href).toBe(DOCS_URL)
 		expect(document.getElementById('hint')?.textContent).toBe('Панель: F12 → вкладка Mockman')
 	})
@@ -114,7 +120,7 @@ describe('popup controls', () => {
 
 	it('shows what is stored when the write fails', async () => {
 		items[STORE_KEY] = { active: true }
-		await initPopup(document, deps({ lastError: () => ({ message: 'quota' }), storage: {
+		await initPopup(document, deps({ setActive: async () => false, lastError: () => ({ message: 'quota' }), storage: {
 			get: (keys, cb) => cb({ [STORE_KEY]: items[STORE_KEY] }),
 			set: (_next, cb) => cb(),
 		} }))

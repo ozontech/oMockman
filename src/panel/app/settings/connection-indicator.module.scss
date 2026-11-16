@@ -1,0 +1,18 @@
+.dot {
+  display: inline-block;
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #87919c;
+  transition: background-color 180ms ease;
+}
+
+.ready { background: #21ba45; }
+.attention { background: #d99a00; }
+.configured { background: #2185d0; }
+.off { background: #87919c; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dot { transition: none; }
+}

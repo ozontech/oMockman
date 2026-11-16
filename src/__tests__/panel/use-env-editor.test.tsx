@@ -168,4 +168,16 @@ describe('useEnvEditor', () => {
 
 		expect(ok).toBe(false)
 	})
+ it('preserves an edited draft and its base revision when remote env changes', async () => {
+  useChromeStore.setState({ store: { ...baseStore(), revision: 4 } })
+  const { result } = renderHook(() => useEnvEditor())
+  act(() => result.current.renameProfile('my draft'))
+  act(() => useChromeStore.setState({ store: { ...baseStore(), revision: 5, env: { activeId: 'default', profiles: [{ id: 'default', name: 'remote', vars: {} }] } } }))
+  expect(result.current.currentProfile?.name).toBe('my draft')
+  updateStoreInDB.mockRejectedValueOnce(new Error('REVISION_CONFLICT'))
+  await act(async () => { expect(await result.current.save()).toBe(false) })
+  expect(updateStoreInDB.mock.calls[0][0].revision).toBe(4)
+  expect(result.current.currentProfile?.name).toBe('my draft')
+ })
+
 })

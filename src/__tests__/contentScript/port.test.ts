@@ -30,7 +30,7 @@ vi.stubGlobal('chrome', {
 	},
 })
 
-const { getContentPort } = await import('../../contentScript/port')
+const { getContentPort, onContentPortMessage } = await import('../../contentScript/port')
 
 describe('getContentPort', () => {
 	beforeEach(() => {
@@ -57,11 +57,14 @@ describe('getContentPort', () => {
 	})
 
 	it('nulls the port on disconnect', () => {
+  const listener = vi.fn()
+  onContentPortMessage(listener)
 		getContentPort()
 
 		const disconnectCallback = (mockPort.onDisconnect.addListener as ReturnType<typeof vi.fn>).mock.calls[0][0]
 		disconnectCallback()
 
 		expect(window.__MOCKMAN_CONTENT_PORT__).toBeNull()
+  expect(listener).toHaveBeenCalledWith({ type: 'MOCKMAN_CAPTURE', enabled: false })
 	})
 })

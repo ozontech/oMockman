@@ -1,0 +1,27 @@
+{
+  "scenarioKey": "examples/modal",
+  "collection": {
+    "name": "modal"
+  },
+  "mocks": [
+    {
+      "key": "first",
+      "method": "GET",
+      "url": "https://app.example.test/api/items",
+      "response": {
+        "status": 200,
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": "{\"items\": [{\"id\": \"item-1\", \"expiresOn\": \"2020-01-01\"}]}"
+      }
+    }
+  ],
+  "scenario": {
+    "enabled": false,
+    "rules": []
+  }
+}

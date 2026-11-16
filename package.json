@@ -1,6 +1,6 @@
 {
   "name": "omockman",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "private": true,
   "description": "Browser DevTools extension that replaces fetch and XHR responses right in the page — no proxy, no rebuild.",
   "keywords": [
@@ -31,9 +31,9 @@
     "dev": "vite",
     "test": "vitest --run",
     "build": "npm run build:chrome",
-    "build:chrome": "rm -rf ./dist/chrome && vite build --config vite/chrome/vite.config.ts && vite build --config vite/chrome/vite.content.config.ts && vite build --config vite/chrome/vite.inject.config.ts && vite build --config vite/chrome/vite.background.config.ts",
-    "build:firefox": "rm -rf ./dist/firefox && vite build --config vite/firefox/vite.config.ts && vite build --config vite/firefox/vite.content.config.ts && vite build --config vite/firefox/vite.inject.config.ts && vite build --config vite/firefox/vite.background.config.ts",
-    "pack:firefox": "npm run build:firefox && (cd dist/firefox && zip -qr ../../mockman-firefox.xpi .)",
+    "build:chrome": "vite build --config vite/chrome/vite.config.ts && vite build --config vite/chrome/vite.content.config.ts && vite build --config vite/chrome/vite.inject.config.ts && vite build --config vite/chrome/vite.background.config.ts",
+    "build:firefox": "vite build --config vite/firefox/vite.config.ts && vite build --config vite/firefox/vite.content.config.ts && vite build --config vite/firefox/vite.inject.config.ts && vite build --config vite/firefox/vite.background.config.ts",
+    "pack:firefox": "npm run build:firefox && node scripts/pack.mjs firefox",
     "preview": "vite preview",
     "notices": "node scripts/generate-third-party-notices.mjs",
     "notices:check": "node scripts/generate-third-party-notices.mjs --check",
@@ -53,11 +53,22 @@
     "allure:serve": "npx allure serve allure-results --host localhost",
     "allure:generate": "npx allure generate allure-results",
     "stylelint": "stylelint \"src/**/*.scss\"",
-    "stylelint:fix": "npm run stylelint -- --fix"
+    "stylelint:fix": "npm run stylelint -- --fix",
+    "test:protocol": "npm test --workspace @mockman/automation-protocol",
+    "test:mcp": "npm test --workspace @mockman/mcp-server",
+    "build:mcp": "node packages/mcp-server/scripts/build.mjs",
+    "test:mcp:artifact": "node packages/mcp-server/scripts/test-artifact.mjs",
+    "test:mcp:browser": "node packages/mcp-server/browser/chromium.js",
+    "test:mcp:firefox": "node packages/mcp-server/browser/firefox.js",
+    "pack": "npm run build:chrome && npm run build:firefox && npm run build:mcp && npm run check:public && node scripts/pack.mjs",
+    "pack:chrome": "npm run build:chrome && node scripts/pack.mjs chrome",
+    "pack:mcp": "npm run build:mcp && node scripts/pack.mjs mcp",
+    "check:public": "node scripts/check-public-content.mjs"
   },
   "dependencies": {
     "@codemirror/lang-json": "<7.0.0",
     "@emotion/react": "^11.10.6",
+    "@mockman/automation-protocol": "0.2.0",
     "@types/chrome": "0.3.5",
     "@uiw/react-codemirror": "<5.0.0",
     "jsonc-parser": "<3.4.0",
@@ -87,6 +98,7 @@
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
+    "fflate": "^0.8.2",
     "globals": "^16.5.0",
     "jsdom": "^29.1.1",
     "lefthook": "^1.13.6",
@@ -99,5 +111,9 @@
     "typescript-eslint": "^8.71.1",
     "vite": "^7.3.7",
     "vitest": "3.2.7"
-  }
+  },
+  "workspaces": [
+    "packages/automation-protocol",
+    "packages/mcp-server"
+  ]
 }

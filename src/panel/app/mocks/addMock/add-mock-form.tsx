@@ -5,6 +5,7 @@ import { useGlobalStore } from '../../store'
 import type { useChromeStoreState } from '../../store'
 
 import { StatusToggle } from './controls'
+import { CollectionSelect } from './collection-select'
 import s from './add-mock.module.scss'
 import { isAddMockFormValid } from './utils'
 import { useAddMockFormState } from './hooks/use-add-mock-form-state'
@@ -56,6 +57,9 @@ export const AddMockForm: React.FC<
 		setStatusInput,
 		formKey,
 	} = useAddMockFormState({ selectedMock })
+
+	const formBase = useRef({ key: formKey, revision: store.revision ?? 0 })
+	if (formBase.current.key !== formKey) formBase.current = { key: formKey, revision: store.revision ?? 0 }
 
 	const openApiSuggestions = useMemo(() => {
 		const seen = new Set<string>()
@@ -251,7 +255,7 @@ export const AddMockForm: React.FC<
 	const handleSubmit = async () => {
 		if (!canSubmit || hasResponseValidationErrors) return
 		await submitMock({
-			store,
+			store: { ...store, revision: formBase.current.revision },
 			isNew,
 			values,
 			tabId: tab?.id,
@@ -331,6 +335,12 @@ export const AddMockForm: React.FC<
 							}
 							className={isDark ? s.darkField : undefined}
 							data-testid="mock-name-input"
+						/>
+
+						<CollectionSelect
+							tree={store.collectionTree}
+							value={values.collectionId}
+							onChange={(collectionId) => setValues((prev) => ({ ...prev, collectionId }))}
 						/>
 
 						<Form.TextArea

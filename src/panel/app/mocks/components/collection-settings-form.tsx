@@ -13,7 +13,8 @@ interface CollectionSettingsFormProps {
 	open: boolean
 	onClose: () => void
 	selectedCollection?: ICollectionNode
-	onSave: (collectionId: string, scenario: ICollectionScenario | undefined) => void
+	onSave: (collectionId: string, scenario: ICollectionScenario | undefined, expectedRevision?: number) => void | boolean | Promise<void | boolean>
+ revision?: number
 	/** The mocks of the collection and its subcollections, for the scenario rules. */
 	mocks: IMockResponse[]
 	onResetScenario?: (collectionId: string) => void
@@ -28,6 +29,7 @@ export const CollectionSettingsForm: React.FC<CollectionSettingsFormProps> = ({
 	onClose,
 	selectedCollection,
 	onSave,
+ revision,
 	mocks,
 	onResetScenario,
 	isDark,
@@ -36,6 +38,7 @@ export const CollectionSettingsForm: React.FC<CollectionSettingsFormProps> = ({
 	const [scenario, setScenario] = useState<ICollectionScenario | undefined>()
 	const [closing, setClosing] = useState(false)
 	const closeTimer = useRef<number>()
+ const baseRevision = useRef<number>()
 
 	useEffect(() => () => window.clearTimeout(closeTimer.current), [])
 
@@ -46,6 +49,7 @@ export const CollectionSettingsForm: React.FC<CollectionSettingsFormProps> = ({
 			return
 		}
 		setScenario(selectedCollection?.scenario)
+  baseRevision.current = revision
 	}, [open, selectedCollection?.id])
 
 	const requestClose = useCallback(() => {
@@ -61,10 +65,10 @@ export const CollectionSettingsForm: React.FC<CollectionSettingsFormProps> = ({
 		requestClose()
 	}, [requestClose])
 
-	const handleSave = useCallback(() => {
+	const handleSave = useCallback(async () => {
 		if (!selectedCollection) return
-		onSave(selectedCollection.id, scenario)
-		requestClose()
+		const saved = await onSave(selectedCollection.id, scenario, baseRevision.current)
+  if (saved !== false) requestClose()
 	}, [selectedCollection, scenario, onSave, requestClose])
 
 	const phase = closing ? 'mm-modal-leave' : 'mm-modal-enter'

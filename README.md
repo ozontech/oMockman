@@ -118,6 +118,39 @@ npm run build:firefox    # dist/firefox
 
 ---
 
+## AI agents and MCP
+
+Mockman 2.5 adds a local MCP server for **macOS/Linux**. It lets an agent use
+recorded Logs to prepare mocks, organize task/case collections, import/export
+sets and run them in a selected tab. Windows extension builds are supported,
+but Windows MCP agent IPC is not yet available.
+
+1. Download and unpack the MCP archive from [Releases](https://github.com/ozontech/oMockman/releases),
+   or run `npm ci && npm run build:mcp` from this repository (Node.js 24).
+2. Configure your MCP client with command `node` and the absolute path to the
+   server. For clients using `mcpServers` JSON:
+
+   ```json
+   {"mcpServers":{"mockman":{"command":"node","args":["/absolute/path/to/oMockman/dist/mcp/index.js"]}}}
+   ```
+
+3. Restart the client and ask it to connect Mockman. Enter its two-minute pairing
+   code in **Mockman → Settings → MCP**.
+4. Select the application tab, allow its site and enable the required permissions:
+   scenario changes for writes/runs; traffic recording for request/response access.
+5. Ask, for example: **“Use the recorded responses to prepare an empty orders list.”**
+   If an example is missing, perform the requested page action and tell the agent
+   to continue. Synthetic replacements require separate approval.
+
+Fixed responses use ordinary collections; sequences are for successive different
+answers from the same endpoint. Runs target one tab, even when several tabs share
+an allowed site. Browser navigation/clicks are separate from MCP mock management.
+
+See the [MCP guide](packages/mcp-server/README.md) for troubleshooting, compatibility
+and optional [agent workflows](packages/skills). Firefox requires **142+**.
+
+---
+
 ## Development
 
 <details>

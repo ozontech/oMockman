@@ -5,6 +5,7 @@ import { MethodEnum } from '@/interface'
 import type { ICollectionTree } from '@/interface/collection'
 import type { IMockResponse } from '@/interface/mock'
 import { useCollectionMeta } from '@/panel/app/mocks/hooks/use-collection-meta'
+import { buildFilteredRows } from '@/panel/app/mocks/model/rows'
 
 const mock = (id: string, overrides: Partial<IMockResponse> = {}): IMockResponse => ({
 	id,
@@ -68,6 +69,54 @@ describe('useCollectionMeta', () => {
 
 		expect(collectionMeta.collectionPathMap.parent).toBe('Parent')
 		expect(collectionMeta.collectionPathMap.child).toBe('Parent / Child')
+	})
+
+	it.each([
+		['m-1', 1, 0],
+		['m-2', 1, 1],
+		['missing', 0, 0],
+		['', 2, 1],
+		['   ', 2, 1],
+	])('counts matches for query "%s" throughout collapsed branches', (query, parent, child) => {
+		const { result } = renderHook(() => useCollectionMeta(tree, mocks, query))
+		expect(result.current.collectionMockCounts).toEqual({ parent, child })
+
+		const rows = buildFilteredRows(tree, mocks, new Set(), query)
+		expect(rows.some((row) => row.rowType === 'collection' && row.node.id === 'parent')).toBe(true)
+		expect(rows.some((row) => row.rowType === 'mock' && row.mock.id === 'm-2')).toBe(false)
+	})
+
+	it.each(['  UNIQUE NAME  ', '/UNIQUE-PATH', 'post', '404'])('uses the same search rules as mock rows: %s', (query) => {
+		const nextMocks = [mock('m-1'), mock('m-2', {
+			name: 'Unique Name',
+			url: 'https://example.com/unique-path',
+			method: MethodEnum.POST,
+			status: 404,
+			active: false,
+		})]
+		const { result } = renderHook(() => useCollectionMeta(tree, nextMocks, query))
+		const rows = buildFilteredRows(tree, nextMocks, new Set(['parent', 'child']), query)
+
+		expect(rows.filter((row) => row.rowType === 'mock').map((row) => row.id)).toEqual(['m-2'])
+		expect(result.current.collectionMockCounts).toEqual({ parent: 1, child: 1 })
+	})
+
+	it('updates counts when the query changes and restores totals when cleared', () => {
+		const { result, rerender } = renderHook(({ query }) => useCollectionMeta(tree, mocks, query), {
+			initialProps: { query: 'm-1' },
+		})
+		expect(result.current.collectionMockCounts).toEqual({ parent: 1, child: 0 })
+		rerender({ query: 'm-2' })
+		expect(result.current.collectionMockCounts).toEqual({ parent: 1, child: 1 })
+		rerender({ query: '' })
+		expect(result.current.collectionMockCounts).toEqual({ parent: 2, child: 1 })
+	})
+
+	it('keeps activity, permissions, paths and the mock index independent of search', () => {
+		const all = meta(tree, mocks)
+		const { result } = renderHook(() => useCollectionMeta(tree, mocks, 'missing'))
+		expect(result.current.collectionMockCounts).toEqual({ parent: 0, child: 0 })
+		expect(result.current).toEqual({ ...all, collectionMockCounts: { parent: 0, child: 0 } })
 	})
 
 	it('marks a branch active when it holds an active mock', () => {

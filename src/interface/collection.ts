@@ -24,6 +24,9 @@ export interface ICollectionScenario {
 }
 
 export interface ICollectionNode {
+ /** Persistent local-key mapping for scenarios created by MCP; imports must not reuse this identity. */
+ automation?: { scenarioKey: string; origin: string; mockIds: Record<string, string>; ruleIds: Record<string, string> }
+	task?: { key: string; origin: string }
 	id: string
 	name: string
 	parentId: string | null

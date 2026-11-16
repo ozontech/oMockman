@@ -60,7 +60,7 @@ export const Mocks: React.FC = () => {
 	const envVars = useMemo(() => getActiveEnvVars(store), [store])
 
 	const expanded = useMemo(() => new Set(expandedCollections), [expandedCollections])
-	const [editCol, setEditCol] = useState<{ id: string; name: string } | null>(null)
+	const [editCol, setEditCol] = useState<{ id: string; name: string; originalName?: string } | null>(null)
 	const [selectedSettingsCollectionId, setSelectedSettingsCollectionId] = useState<string | null>(null)
 	const [hoverCollection, setHoverCollection] = useState<string | null>(null)
 	const [columnWidths, setColumnWidths] = useState<{ name: number; url: number }>(() => {
@@ -223,6 +223,7 @@ export const Mocks: React.FC = () => {
 	} = useCollectionMeta(
 		store.collectionTree,
 		store.mocks,
+		search,
 	)
 
 	const expandToFirstActive = useCallback((collectionId: string) => {
@@ -443,11 +444,11 @@ export const Mocks: React.FC = () => {
 	}, [t])
 
 	const handleCollectionSettingsSave = useCallback(
-		async (collectionId: string, scenario: ICollectionScenario | undefined) => {
+		async (collectionId: string, scenario: ICollectionScenario | undefined, expectedRevision?: number) => {
 			try {
 				const { setStoreProperties } = useChromeStore.getState()
 				await saveCollectionScenario({
-					store,
+					store: { ...store, revision: expectedRevision ?? store.revision },
 					collectionId,
 					scenario,
 					setStoreProperties,
@@ -456,6 +457,7 @@ export const Mocks: React.FC = () => {
 				toast.success(t.mocks_collectionSaved)
 			} catch (error) {
 				toast.error(describeSaveError(error, t, t.toast_collectionCannotUpdate))
+    return false
 			}
 		},
 		[store, t],
@@ -626,6 +628,11 @@ export const Mocks: React.FC = () => {
 							const editingThisRow = editCol?.id === row.node.id
 							return {
 								draggable: !isFirefox && !editingThisRow,
+								onClick: (e: React.MouseEvent) => {
+									if (!e.currentTarget.contains(e.target as Node)) return
+									if (editingThisRow || (isFirefox && suppressClickRef.current)) return
+									toggleExpanded(row.node.id)
+								},
 								...(isFirefox ? getRowPointerHandlers({ type: 'collection', id: row.node.id }) : {}),
 								onDragStart: (e: React.DragEvent) => {
 									if (isFirefox) return
@@ -683,9 +690,10 @@ export const Mocks: React.FC = () => {
 						}
 						return undefined
 					}}
-					getRowAttrs={(row) => (
+					getRowAttrs={(row): Record<string, string | number | boolean> => (
 						row.rowType === 'collection'
 							? {
+								'data-expanded': expanded.has(row.node.id),
 								'data-testid': 'collection-row',
 								'data-row-id': String(row.id),
 								'data-row-type': 'collection',
@@ -723,6 +731,7 @@ export const Mocks: React.FC = () => {
 			</div>
 
 			<CollectionSettingsForm
+    revision={store.revision ?? 0}
 				open={selectedSettingsCollectionId !== null}
 				onClose={() => setSelectedSettingsCollectionId(null)}
 				selectedCollection={selectedSettingsCollectionId ? store.collectionTree.nodes[selectedSettingsCollectionId] : undefined}

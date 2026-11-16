@@ -4,6 +4,7 @@
  * It shares the panel's origin, so it follows the theme and the language picked there. With
  * "system" or nothing picked, popup.html follows prefers-color-scheme on its own.
  */
+import { sendLibraryCommand } from '@/services/library-client'
 import { STORE_KEY } from '@/background/store-access'
 import { DOCS_URL } from '@/services/docs'
 
@@ -46,6 +47,7 @@ export interface PopupStorage {
 }
 
 export interface PopupDeps {
+	setActive: (active: boolean) => Promise<boolean>
 	storage: PopupStorage
 	/** Called back whenever the store changes elsewhere, e.g. in an open panel. */
 	onStoreChanged?: (listener: () => void) => void
@@ -78,20 +80,9 @@ function readStore(deps: PopupDeps): Promise<StoredStore | null> {
 	})
 }
 
-/**
- * Reads the store right before writing it: the panel may have changed it since the popup opened,
- * and a stale copy would undo that. False when there is no store yet or the write failed.
- */
+/** The background patches only active against its latest library state. */
 export async function setMockingActive(deps: PopupDeps, active: boolean): Promise<boolean> {
-	const store = await readStore(deps)
-	if (!store) return false
-	return new Promise((resolve) => {
-		try {
-			deps.storage.set({ [STORE_KEY]: { ...store, active } }, () => resolve(!deps.lastError?.()))
-		} catch {
-			resolve(false)
-		}
-	})
+ try { return await deps.setActive(active) } catch { return false }
 }
 
 export async function initPopup(doc: Document, deps: PopupDeps): Promise<void> {
@@ -170,6 +161,7 @@ if (typeof document !== 'undefined') {
 		}
 		const start = () => void initPopup(document, {
 			storage: ext.storage.local as unknown as PopupStorage,
+			setActive: async (active) => (await sendLibraryCommand({ action: 'set_active', active })).ok,
 			onStoreChanged: (listener) => ext.storage.onChanged.addListener((changes, area) => {
 				if (area === 'local' && changes[STORE_KEY]) listener()
 			}),

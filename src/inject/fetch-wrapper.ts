@@ -2,7 +2,7 @@
 
 import { buildLog, markPatchedRequest } from '@/inject'
 import type { LogPatch } from '@/inject'
-import { isLoggingEnabled, resolveMock, sendLog, takeLogSlot } from '@/inject/bridge'
+import { needsRequestBody, isLoggingEnabled, resolveMock, sendLog, takeLogSlot } from '@/inject/bridge'
 import { buildHeadersMap } from '@/inject/http-utils'
 import type { LimitedBody } from '@/inject/limits'
 import {
@@ -80,9 +80,15 @@ function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
 }
 
 /** Clones synchronously: once the request is sent its body is used up. */
-function readRequestBody(request: Request): Promise<LimitedBody> {
+function readRequestBody(request: Request, limit?: number): Promise<LimitedBody> {
 	try {
-		return readBodyLimited(request.clone().body)
+		const copy = request.clone()
+		// Firefox exposes Body methods but not Request.body. Blob size is checked before text decoding.
+		if (copy.body === undefined) return copy.blob().then(async (blob) => {
+			if (blob.size > (limit ?? MAX_LOGGED_BODY_BYTES)) return { text: '', tooLarge: true }
+			return { text: await blob.text(), tooLarge: false }
+		}).catch(() => EMPTY_BODY)
+		return readBodyLimited(copy.body, limit)
 	} catch {
 		return Promise.resolve(EMPTY_BODY)
 	}
@@ -152,6 +158,7 @@ function readResponseForLog(response: Response): Promise<LogResponse | undefined
 		: responseForLog(status, body.text, headers)))
 }
 
+
 function reportLog(
 	id: string,
 	request: Request,
@@ -197,7 +204,8 @@ export function applyFetchWrapper(): void {
 			}
 
 			const id = genId()
-			const mock = await resolveMock(request.method, request.url, id).catch(() => null)
+			const matchingBody = await needsRequestBody() ? await readRequestBody(request, 1024 * 1024) : undefined
+			const mock = await resolveMock(request.method, request.url, id, matchingBody?.tooLarge ? undefined : matchingBody?.text).catch(() => null)
 			const logging = takeLogSlot(request.method, request.url)
 			const delayMs = typeof mock?.delay === 'number' && mock.delay > 0 ? mock.delay : 0
 			// The page's own signal: the copy on the Request only follows it.

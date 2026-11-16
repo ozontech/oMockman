@@ -29,6 +29,8 @@ interface PendingImport {
 
 const rejectionMessage = (rejection: ImportRejection): string => {
 	switch (rejection.code) {
+		case 'invalid_archive':
+			return 'Invalid Mockman collection archive or unsupported archive version.'
 		case 'source_too_large':
 			return `File is too large: ${formatBytes(rejection.actual ?? 0)}, limit is ${formatBytes(IMPORT_LIMITS.maxSourceBytes)}.`
 		case 'invalid_json':
