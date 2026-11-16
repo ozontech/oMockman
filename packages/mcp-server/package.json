@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@mockman/automation-protocol": "0.2.0",
-    "@modelcontextprotocol/sdk": "1.32.0",
-    "ws": "8.22.1"
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "ws": "8.23.0"
   },
   "devDependencies": {
-    "esbuild": "0.27.3"
+    "esbuild": "0.28.2"
   }
 }
