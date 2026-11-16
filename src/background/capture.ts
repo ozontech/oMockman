@@ -292,11 +292,13 @@ export async function handleCaptureCommand(
 			return { kind: 'request_details', captureId: 'history', tabId: access.tabId, entry }
 		}
 		if (command === 'start_capture') {
+			const durationMs = raw.durationMs
 			if (
 				Object.keys(raw).some((key) => !['durationMs', 'method', 'path'].includes(key)) ||
-				!Number.isInteger(raw.durationMs) ||
-				Number(raw.durationMs) < 1000 ||
-				Number(raw.durationMs) > 120000 ||
+				typeof durationMs !== 'number' ||
+				!Number.isInteger(durationMs) ||
+				durationMs < 1000 ||
+				durationMs > 120000 ||
 				typeof raw.method !== 'string' ||
 				!['', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(raw.method) ||
 				typeof raw.path !== 'string' ||
@@ -311,7 +313,7 @@ export async function handleCaptureCommand(
 				if (
 					active.tabId === access.tabId &&
 					active.origin === access.origin &&
-					active.durationMs === raw.durationMs &&
+					active.durationMs === durationMs &&
 					active.method === raw.method &&
 					active.path === raw.path
 				)
@@ -327,12 +329,12 @@ export async function handleCaptureCommand(
 			const id = crypto.randomUUID(),
 				now = Date.now()
 			const item: Capture = {
-				durationMs: Number(raw.durationMs),
+				durationMs,
 				id,
 				owner: access.scope,
 				tabId: access.tabId,
 				origin: access.origin,
-				until: now + Number(raw.durationMs),
+				until: now + durationMs,
 				expires: now + 300000,
 				entries: [],
 				next: 1,
@@ -344,7 +346,7 @@ export async function handleCaptureCommand(
 				timer: setTimeout(() => {
 					const current = captures.get(id)
 					if (current) stop(current)
-				}, Number(raw.durationMs)),
+				}, durationMs),
 			}
 			captures.set(id, item)
 			changed(access.tabId)

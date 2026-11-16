@@ -213,3 +213,27 @@ it('combines retained Logs with newer capture traffic and does not report backgr
 		expect(await handleCaptureCommand('get_request_details', { captureId: 'history', requestId }, access)).toMatchObject({ kind: 'request_details' })
 	}
 })
+
+
+it.each([undefined, null, '1000', NaN, Infinity, -Infinity, -1, 0, 999, 1000.5, 120001, 2147483648])(
+	'rejects invalid capture duration %s without allocating a timer',
+	async (durationMs) => {
+		vi.useFakeTimers()
+		const timersBefore = vi.getTimerCount()
+		expect(await handleCaptureCommand('start_capture', { durationMs, method: '', path: '' }, access))
+			.toMatchObject({ kind: 'error', code: 'INVALID_ARGUMENTS' })
+		expect(vi.getTimerCount()).toBe(timersBefore)
+		expect(isMcpCaptureEnabled(access.tabId)).toBe(false)
+	},
+)
+
+it.each([1000, 120000])('stops capture at the accepted duration boundary %i', async (durationMs) => {
+	vi.useFakeTimers()
+	const now = Date.now()
+	const result = await handleCaptureCommand('start_capture', { durationMs, method: '', path: '' }, access)
+	expect(result).toMatchObject({ kind: 'capture', recordingUntil: now + durationMs })
+	vi.advanceTimersByTime(durationMs - 1)
+	expect(isMcpCaptureEnabled(access.tabId)).toBe(true)
+	vi.advanceTimersByTime(1)
+	expect(isMcpCaptureEnabled(access.tabId)).toBe(false)
+})
