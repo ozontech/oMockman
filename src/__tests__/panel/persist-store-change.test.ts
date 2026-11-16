@@ -32,7 +32,7 @@ describe('persistStoreChange', () => {
 	it('lands two quick changes instead of letting the second undo the first', async () => {
 		// A slow storage write: the second click comes while the first is still in flight.
 		vi.stubGlobal('chrome', {
-			runtime: { sendMessage: vi.fn(), lastError: undefined },
+			runtime: { sendMessage: (message: { type: string; store?: IStore }, cb?: (answer: unknown) => void) => { if (message.type === 'LIBRARY_COMMAND') setTimeout(() => cb?.({ ok: true, store: message.store }), 10) }, lastError: undefined },
 			tabs: { sendMessage: vi.fn() },
 			storage: { local: { set: (_items: unknown, cb: () => void) => setTimeout(cb, 10) } },
 		})
@@ -55,21 +55,15 @@ describe('persistStoreChange', () => {
 
 	it('keeps writing after a failed write', async () => {
 		let fail = true
-		const runtime: { lastError?: { message: string }; sendMessage: () => void } = { sendMessage: vi.fn() }
 		vi.stubGlobal('chrome', {
-			runtime,
-			tabs: { sendMessage: vi.fn() },
-			storage: {
-				local: {
-					set: (_items: unknown, cb: () => void) => {
-						runtime.lastError = fail ? { message: 'quota' } : undefined
-						fail = false
-						cb()
-						runtime.lastError = undefined
-					},
-				},
-			},
-		})
+   runtime: { sendMessage: (message: { type: string; store?: IStore }, cb?: (answer: unknown) => void) => {
+    if (message.type !== 'LIBRARY_COMMAND') return
+    const answer = fail ? { ok: false, error: 'quota' } : { ok: true, store: message.store }
+    fail = false
+    cb?.(answer)
+   } },
+   tabs: { sendMessage: vi.fn() },
+  })
 		const setStoreProperties = vi.fn()
 
 		await expect(persistStoreChange({ updatedStore: store(), setStoreProperties, applyMocksNow: false })).rejects.toThrow()

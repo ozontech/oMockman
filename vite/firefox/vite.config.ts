@@ -12,6 +12,20 @@ const src = path.resolve(projectRoot, 'src')
 
 export default defineConfig({
 	plugins: [
+		{
+			name: 'lodash-global-without-eval',
+			enforce: 'pre',
+			transform(_code, id) {
+				// Lodash's legacy Function('return this') fallback is unnecessary in
+				// supported Firefox versions and is flagged by the add-on validator.
+				if (/[/\\]node_modules[/\\]lodash[/\\]_root\.js$/.test(id)) {
+					return { code: 'module.exports = globalThis;', map: null }
+				}
+				if (/[/\\]node_modules[/\\]lodash-es[/\\]_root\.js$/.test(id)) {
+					return { code: 'export default globalThis;', map: null }
+				}
+			},
+		},
 		copyStatic([
 			{ from: path.resolve(projectRoot, 'public/firefox/manifest.json'), to: '.' },
 			{ from: path.resolve(projectRoot, 'public/icons'), to: 'public/icons', include: /\.(svg|png)$/ },
@@ -36,6 +50,7 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				panel: path.resolve(projectRoot, 'public/html/panel.html'),
+				mcp: path.resolve(projectRoot, 'public/html/mcp.html'),
 				devtool: path.join(projectRoot, 'public/html/devtool.html'),
 				popup: path.join(projectRoot, 'public/html/popup.html'),
 				content_script: path.join(src, 'content-script.ts'),

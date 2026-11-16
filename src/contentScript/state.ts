@@ -1,4 +1,4 @@
-import { getStore } from '@/panel/app/service/store-actions'
+import { getStore } from '@/services/library-read'
 import type { IStore, IURLMap, IDynamicURLMap } from '@/interface/mock'
 
 export class ContentScriptState {

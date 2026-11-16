@@ -33,6 +33,8 @@ jobs:
           npm run build:chrome
           npm run build:firefox
           npm run notices:check
+          npm run build:mcp
+          npm run check:public
 
   unit:
     name: Unit tests
@@ -45,6 +47,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run vitest:coverage
+      - run: npm run test:protocol
+      - run: npm run test:mcp
+      - run: npm run build:mcp
+      - run: npm run test:mcp:artifact
       - uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:

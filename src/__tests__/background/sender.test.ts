@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { isExtensionPageSender } from '@/background/sender'
+import { isExtensionPageSender, isMcpSettingsSender } from '@/background/sender'
 
 /** In Firefox the page host is a per-install UUID, not the extension id. */
 const stubRuntime = (id: string | undefined, base = `chrome-extension://${id}/`): void => {
@@ -34,11 +34,19 @@ describe('isExtensionPageSender', () => {
 		expect(isExtensionPageSender(sender({ id: 'abc', url: 'https://abc/public/html/panel.html' }))).toBe(false)
 	})
 
-	it('rejects a content script - it always carries a tab', () => {
+	it('accepts our packaged panel opened in a browser tab', () => {
 		stubRuntime('abc')
 		expect(isExtensionPageSender(sender({
 			id: 'abc',
 			url: 'chrome-extension://abc/public/html/panel.html',
+			tab: { id: 7 } as chrome.tabs.Tab,
+		}))).toBe(true)
+	})
+
+	it('rejects content scripts even with our runtime id and a panel-like path', () => {
+		stubRuntime('abc')
+		expect(isExtensionPageSender(sender({
+			id: 'abc', url: 'https://app.example.com/public/html/panel.html',
 			tab: { id: 7 } as chrome.tabs.Tab,
 		}))).toBe(false)
 	})
@@ -63,4 +71,22 @@ describe('isExtensionPageSender', () => {
 		expect(isExtensionPageSender(undefined)).toBe(false)
 		expect(isExtensionPageSender({} as chrome.runtime.MessageSender)).toBe(false)
 	})
+})
+
+
+describe('isMcpSettingsSender', () => {
+ afterEach(() => vi.unstubAllGlobals())
+ it('allows only the dedicated extension page, including a browser tab', () => {
+  stubRuntime('abc')
+  const setup = sender({ id: 'abc', url: 'chrome-extension://abc/public/html/mcp.html', tab: { id: 7 } as chrome.tabs.Tab })
+  expect(isMcpSettingsSender(setup)).toBe(true)
+  expect(isExtensionPageSender(setup)).toBe(false)
+  expect(isMcpSettingsSender(sender({ ...setup, url: 'https://app.example.test/public/html/mcp.html' }))).toBe(false)
+  expect(isMcpSettingsSender(sender({ ...setup, id: 'other' }))).toBe(false)
+  expect(isMcpSettingsSender(sender({ ...setup, url: 'chrome-extension://abc/public/html/popup.html' }))).toBe(false)
+ })
+ it('supports Firefox extension UUID without trusting the addon id as origin', () => {
+  stubRuntime('{gecko-id}', 'moz-extension://installation-uuid/')
+  expect(isMcpSettingsSender(sender({ id: '{gecko-id}', url: 'moz-extension://installation-uuid/public/html/mcp.html' }))).toBe(true)
+ })
 })

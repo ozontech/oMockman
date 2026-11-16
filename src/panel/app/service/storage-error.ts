@@ -9,5 +9,6 @@ export class StorageWriteError extends Error {
 
 /** The storage-specific message for a failed write, or the fallback for any other error. */
 export function describeSaveError(error: unknown, t: Translations, fallback: string): string {
+	if (error instanceof StorageWriteError && error.reason === 'REVISION_CONFLICT') return t.toast_revisionConflict
 	return error instanceof StorageWriteError ? t.toast_storageWriteFailed(error.reason) : fallback
 }

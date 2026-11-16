@@ -102,10 +102,10 @@ describe('trusted origin source', () => {
 		expect(sendMessage({ type: 'PANEL_GET_ORIGIN' }, frameSender)).toEqual({ origin: 'https://frame.example.com' })
 	})
 
-	it('answers the panel about the tab it asks for', () => {
+	it.each([undefined, { id: 7 }])('answers the panel about its inspected tab, including sender.tab=%j', (tab) => {
 		tabsGet.mockImplementation((_id: number, cb: (tab: unknown) => void) => cb({ url: 'https://site.ru:8443/app' }))
 
-		const response = sendMessage({ type: 'PANEL_GET_ORIGIN', tabId: 7 }, PANEL_SENDER)
+		const response = sendMessage({ type: 'PANEL_GET_ORIGIN', tabId: 7 }, { ...PANEL_SENDER, tab } as chrome.runtime.MessageSender)
 
 		expect(tabsGet).toHaveBeenCalledWith(7, expect.any(Function))
 		expect(response).toEqual({ origin: 'https://site.ru:8443' })

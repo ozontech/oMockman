@@ -1,3 +1,4 @@
+import { TabRun } from '@/contentScript/tab-run'
 import { fetchFullResponseHeaders } from '@/contentScript/headers'
 import { InjectBridge } from '@/contentScript/bridge'
 import { inject } from '@/contentScript/inject-to-dom'
@@ -21,6 +22,7 @@ import { MessageAPI } from '@/services/message/api'
 
 let state: ContentScriptState
 let bridge: InjectBridge | undefined
+let tabRun: TabRun | undefined
 
 /** Collection scenarios run in the top frame: one flow per tab. */
 const scenarios = window === window.top ? new ScenarioRuntime() : undefined
@@ -37,7 +39,7 @@ const postToPanel = (envelope: IEventMessage): void => {
 }
 
 const sendLogToPanel = (id: string | undefined, log: ILog): void => {
-	postToPanel({ message: log, type: 'LOG', from: 'CONTENT', to: 'PANEL', id, extensionName: 'MOCKMAN' })
+	postToPanel({ message: log, sourceDocumentId: tabRun?.documentId, type: 'LOG', from: 'CONTENT', to: 'PANEL', id, extensionName: 'MOCKMAN' })
 }
 
 const rememberScenarioHit = (logId: string | undefined, hit: ScenarioHit): void => {
@@ -164,17 +166,18 @@ const initScript = async (): Promise<void> => {
 		state = new ContentScriptState()
 		await Promise.all([state.refresh(), state.refreshOrigin()])
 
+		if (scenarios) tabRun = new TabRun(() => state, () => bridge?.bumpEpoch())
 		bridge = new InjectBridge({
-			getState: () => state,
+			getState: () => tabRun?.view() ?? state,
 			onLog: (id, message) => void onInjectLog(id, message),
-			scenarios,
+			get scenarios() { return tabRun?.runtime() ?? scenarios },
 			onScenarioHit: rememberScenarioHit,
 		})
 		bridge.connect()
 
 		// Logging stays off until the background reports an open panel.
 		onContentPortMessage((message) => {
-			const msg = message as { type?: string; enabled?: boolean }
+			const msg = message as { type?: string; enabled?: boolean; active?: boolean }
 			if (msg?.type === 'MOCKMAN_CAPTURE') {
 				bridge?.setLogging(msg.enabled !== false)
 			}
@@ -185,10 +188,19 @@ const initScript = async (): Promise<void> => {
 			void 0
 		}
 
+        if (tabRun) chrome.runtime.onMessage.addListener((message, sender, reply) => {
+            if (message?.type !== 'MOCKMAN_RUN') return undefined
+            const valid = sender.id === chrome.runtime.id && !sender.tab && (!sender.url || sender.url === chrome.runtime.getURL('js/background.js') || sender.url === chrome.runtime.getURL('_generated_background_page.html'))
+            if (!valid) return undefined
+            try { reply({ ok: true, value: tabRun?.handle(message) }) }
+            catch (error) { reply({ ok: false, error: error instanceof Error ? error.message : 'RUN_ERROR' }) }
+            return undefined
+        })
+
 		// Sent by the background when this port is gone (the worker was stopped meanwhile).
 		try {
 			chrome.runtime.onMessage.addListener((
-				message: { type?: string; enabled?: boolean; origin?: string | null; request?: ISendRequest },
+				message: { type?: string; enabled?: boolean; active?: boolean; origin?: string | null; request?: ISendRequest },
 				sender: chrome.runtime.MessageSender,
 				sendResponse: (result: ISendResult) => void,
 			) => {

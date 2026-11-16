@@ -77,17 +77,20 @@ export function createNameColumn(params: CreateMocksTableSchemaParams): TableSch
 											setEditCol({
 												id: row.node.id,
 												name: e.currentTarget.value,
+            originalName: editCol?.originalName,
 											})}
 										onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
 										onDragStart={(e: React.DragEvent) => {
 											e.preventDefault()
 											e.stopPropagation()
 										}}
-										onBlur={() => {
+										onBlur={async () => {
 											const name = (editCol?.name ?? '').trim()
-											setEditCol(null)
-											if (name && name !== row.node.name)
-												collectionActions.renameCollection(row.node.id, name)
+if (name && name !== row.node.name) {
+            const saved = await collectionActions.renameCollection(row.node.id, name, editCol?.originalName)
+            if (saved === false) return
+           }
+           setEditCol(null)
 										}}
 										onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
 											if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
@@ -118,7 +121,7 @@ export function createNameColumn(params: CreateMocksTableSchemaParams): TableSch
 									onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
 									onClick={(e) => {
 										e.stopPropagation()
-										setEditCol({ id: row.node.id, name: row.node.name })
+										setEditCol({ id: row.node.id, name: row.node.name, originalName: row.node.name })
 									}}
 								>
 									<Icon name="edit" />
@@ -129,8 +132,11 @@ export function createNameColumn(params: CreateMocksTableSchemaParams): TableSch
 								icon
 								basic
 								color="grey"
-								onClick={() => toggleExpanded(row.node.id)}
 								title={expanded.has(row.node.id) ? t.mocks_collapse : t.mocks_expand}
+								onClick={(e) => {
+									e.stopPropagation()
+									toggleExpanded(row.node.id)
+								}}
 							>
 								<Icon name={expanded.has(row.node.id) ? 'chevron up' : 'chevron down'} />
 							</Button>

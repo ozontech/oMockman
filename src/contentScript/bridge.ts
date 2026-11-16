@@ -85,7 +85,7 @@ export class InjectBridge {
 	pushGate(): void {
 		const state = this.host.getState()
 		const open = Boolean(state?.store?.active) && hasAnyPermission(state?.store ?? ({} as never), state?.origin ?? null)
-		this.send({ k: 'gate', open })
+		this.send({ k: 'gate', open, ...(open && state?.store.mocks.some(mock => mock.active && !!mock.when?.body?.length) ? { needsBody: true } : {}) })
 	}
 
 	setLogging(enabled: boolean): void {
@@ -145,38 +145,43 @@ export class InjectBridge {
 			return
 		}
 		if (message.k === 'match') {
-			const { mock, noCache } = this.findMock(message.method, message.url, message.logId)
+			const { mock, noCache } = this.findMock(message.method, message.url, message.logId, typeof message.body === 'string' && message.body.length <= 1024 * 1024 ? message.body : undefined)
 			this.send({ k: 'match:res', id: message.id, mock, ...(noCache ? { noCache } : {}) })
 		}
 	}
 
 	/**
 	 * A scenario rule first (top frame only: one flow per tab), then the usual mock for the
-	 * endpoint. The page sends only method and url, so it cannot widen its own access.
+	 * endpoint. The page supplies method, URL and bounded request body; access stays bound to this tab.
 	 */
-	private findMock(method: string, url: string, logId?: string): { mock: IBridgeMockAnswer | null; noCache: boolean } {
+	private findMock(method: string, url: string, logId?: string, body?: string): { mock: IBridgeMockAnswer | null; noCache: boolean } {
 		const state = this.host.getState()
 		if (!state || !state.store?.active) return { mock: null, noCache: false }
 		if (!hasAnyPermission(state.store, state.origin)) return { mock: null, noCache: false }
 
 		if (this.host.scenarios) {
-			const { hit, tracked } = this.host.scenarios.match(state.store, method, url)
+			const { hit, tracked } = this.host.scenarios.match(state.store, method, url, () => this.findEndpointMock(method, url, body), body)
 			if (hit) this.host.onScenarioHit?.(logId, hit)
 			if (hit) return { mock: hit.mock ? answerFor(hit.mock) : null, noCache: true }
-			if (tracked) return { mock: this.findEndpointMock(method, url), noCache: true }
+			if (tracked) return { mock: this.endpointAnswer(method, url, body), noCache: true }
 		}
-		return { mock: this.findEndpointMock(method, url), noCache: false }
+		return { mock: this.endpointAnswer(method, url, body), noCache: state.store.mocks.some(mock => mock.active && !!mock.when) }
 	}
 
-	private findEndpointMock(method: string, url: string): IBridgeMockAnswer | null {
+	private endpointAnswer(method: string, url: string, body?: string): IBridgeMockAnswer | null {
+		const mock = this.findEndpointMock(method, url, body)
+		return mock ? answerFor(mock) : null
+	}
+
+	private findEndpointMock(method: string, url: string, body?: string): IMockResponse | null {
 		const state = this.host.getState()
 		if (!state) return null
 		const paths = getMockPaths(url, method, {
 			urlMap: state.urlMap,
 			dynamicUrlMap: state.dynamicUrlMap,
 		})
-		const { mock } = getActiveMockWithPath(paths, state.store)
-		return mock ? answerFor(mock) : null
+		const { mock } = getActiveMockWithPath(paths, state.store, { url, body })
+		return mock ?? null
 	}
 }
 

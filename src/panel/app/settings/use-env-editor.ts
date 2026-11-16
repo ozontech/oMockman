@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import { useGlobalStore, useChromeStore } from '../store'
@@ -46,19 +46,23 @@ export function useEnvEditor(): EnvEditor {
 		setStoreProperties: s.setStoreProperties,
 	}))
 
-	const [draft, setDraft] = useState<Env | null>(null)
+	const dirty = useRef(false)
+ const baseRevision = useRef(store?.revision ?? 0)
+ const [draft, setDraft] = useState<Env | null>(null)
 	const [varsRows, setVarsRows] = useState<VarRow[]>([])
 	const [saved, setSaved] = useState(false)
 	const savedEnv = useMemo(() => (normalizeEnv(store as IStore).env ?? null) as Env | null, [store])
 	const savedEnvKey = JSON.stringify(savedEnv)
 
 	useEffect(() => {
-		const env = JSON.parse(savedEnvKey) as Env | null
+		if (dirty.current) return
+  baseRevision.current = store?.revision ?? 0
+  const env = JSON.parse(savedEnvKey) as Env | null
 		setDraft(env)
 		const current = env?.profiles.find((p) => p.id === env.activeId) ?? env?.profiles[0]
 		setVarsRows(toVarRows(current?.vars ?? {}))
 		setSaved(false)
-	}, [savedEnvKey])
+	}, [savedEnvKey, store?.revision])
 
 	const currentProfile = useMemo<EnvProfile | null>(() => {
 		if (!draft) return null
@@ -77,6 +81,7 @@ export function useEnvEditor(): EnvEditor {
 		setDraft({ ...draft, profiles })
 		setVarsRows(rows)
 		setSaved(false)
+  dirty.current = true
 	}
 
 	const selectProfile = (id: string) => {
@@ -86,6 +91,7 @@ export function useEnvEditor(): EnvEditor {
 		const profile = next.profiles.find((p) => p.id === id) ?? next.profiles[0]
 		setVarsRows(toVarRows(profile?.vars ?? {}))
 		setSaved(false)
+  dirty.current = true
 	}
 
 	const addProfile = () => {
@@ -98,6 +104,7 @@ export function useEnvEditor(): EnvEditor {
 		setDraft({ ...draft, activeId: id, profiles })
 		setVarsRows(toVarRows({ BASE_URL: '' }))
 		setSaved(false)
+  dirty.current = true
 	}
 
 	const removeProfile = () => {
@@ -107,6 +114,7 @@ export function useEnvEditor(): EnvEditor {
 		setDraft({ ...draft, profiles, activeId })
 		setVarsRows(toVarRows(profiles[0]?.vars ?? {}))
 		setSaved(false)
+  dirty.current = true
 	}
 
 	const renameProfile = (name: string) => {
@@ -114,6 +122,7 @@ export function useEnvEditor(): EnvEditor {
 		const profiles = draft.profiles.map((p) => (p.id === draft.activeId ? { ...p, name } : p))
 		setDraft({ ...draft, profiles })
 		setSaved(false)
+  dirty.current = true
 	}
 
 	const addVar = () => setActiveProfileVars([...varsRows, { id: genId(), key: '', value: '' }])
@@ -126,9 +135,11 @@ export function useEnvEditor(): EnvEditor {
 	const save = async (): Promise<boolean> => {
 		if (!draft) return false
 		try {
-			const nextStore = normalizeEnv({ ...(store as IStore), env: draft } as IStore)
+			const nextStore = normalizeEnv({ ...(store as IStore), env: draft, revision: baseRevision.current } as IStore)
 			const updated = await storeActions.updateStoreInDB(nextStore)
-			setStoreProperties(updated)
+			dirty.current = false
+   baseRevision.current = updated.store.revision ?? 0
+   setStoreProperties(updated)
 			storeActions.refreshContentStore(tabId)
 			setSaved(true)
 			return true

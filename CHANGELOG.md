@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0]
+
+### Added
+
+- Local MCP server for macOS/Linux: browser pairing, explicit site/traffic/write permissions,
+  tab selection and following the active allowed tab.
+- Agent workflows using recorded Logs and frontend source code, task/case collections,
+  validated import/export, conditional URL/query/JSON-body matching and live run refresh.
+- A standalone MCP release archive with dependency notices and source provenance.
+- Collection selection when creating a mock, full-row expansion and search result counts.
+- Connection indicators in settings and a dedicated MCP setup page.
+- Cross-platform archive packaging without shell zip commands.
+
+### Fixed
+
+- Settings and site permission writes from a panel opened in a regular browser tab.
+- Reading existing panel Logs through MCP, including reconnect and navigation handling.
+- Broker peer authentication and pairing attempt isolation between sessions.
+- Firefox compatibility metadata and the legacy Lodash eval fallback in the Firefox bundle.
+
+### Changed
+
+- Firefox requires version 142 or newer. Firefox release archives remain unsigned.
+- Windows can build/package the extension, but MCP agent IPC currently supports macOS/Linux only.
+
 ## [2.4.0]
 
 ### Added

@@ -6,6 +6,7 @@ import type { GlobalStoreState } from '../../store'
 
 import { useAddBulkMock } from './add-bulk-mock'
 
+import { readPanelTraffic, rememberLogSource } from '@/panel/app/service/traffic-history'
 import { getMockFromLog } from '@/panel/app/logs/log-util'
 import type { ILog, IMockResponseRaw } from '@/interface/mock'
 import type { IEventMessage } from '@/interface/message'
@@ -83,37 +84,57 @@ export const usePanelListener = (
 
 	useEffect(() => {
 		let port: chrome.runtime.Port | undefined
-		try {
-			port = chrome.runtime.connect({ name: 'mockman-panel' })
-			;(globalThis as { __MOCKMAN_PANEL_PORT__?: chrome.runtime.Port }).__MOCKMAN_PANEL_PORT__ = port
+		let disposed = false
+		let reconnect: ReturnType<typeof setTimeout> | undefined
+		const connectPanel = () => {
+			try {
+				if (disposed) return
+				port = chrome.runtime.connect({ name: 'mockman-panel' })
+				port.onDisconnect.addListener(() => {
+					port = undefined
+					if (!disposed) reconnect = setTimeout(connectPanel, 500)
+				})
+				;(globalThis as { __MOCKMAN_PANEL_PORT__?: chrome.runtime.Port }).__MOCKMAN_PANEL_PORT__ = port
 
-			if (meta.tab?.id) {
-				port.postMessage({ type: 'REGISTER_PANEL', tabId: meta.tab.id })
-				port.postMessage({ type: 'SET_LOGGING', tabId: meta.tab.id, enabled: loggingEnabledRef.current })
-			}
-
-			port.onMessage.addListener((raw) => {
-				const msg = raw as IEventMessage
-
-				switch (msg.type) {
-					case 'LOG': {
-						const sourceTabId = msg.sourceTabId
-						if (sourceTabId != null && sourceTabId !== metaRef.current.tab?.id) break
-						handleLog(msg.message as ILog)
-						break
-					}
-					case 'INIT':
-						handleInit(msg.message as string)
-						break
+				if (meta.tab?.id) {
+					port.postMessage({ type: 'REGISTER_PANEL', tabId: meta.tab.id })
+					port.postMessage({ type: 'SET_LOGGING', tabId: meta.tab.id, enabled: loggingEnabledRef.current })
 				}
-			})
-		} catch (e) {
-			void e
+
+				port.onMessage.addListener((raw) => {
+					if (raw?.type === 'READ_PANEL_TRAFFIC') {
+						port?.postMessage({ type: 'PANEL_TRAFFIC', requestId: raw.requestId,
+							entries: readPanelTraffic(useLogStore.getState().logs, raw.query) })
+						return
+					}
+					const msg = raw as IEventMessage
+
+					switch (msg.type) {
+						case 'LOG': {
+							const sourceTabId = msg.sourceTabId
+							if (sourceTabId != null && sourceTabId !== metaRef.current.tab?.id) break
+							if (typeof sourceTabId === 'number' && msg.sourceOrigin) {
+								rememberLogSource(msg.message as ILog, sourceTabId, msg.sourceOrigin, msg.sourceDocumentId ?? null)
+							}
+							handleLog(msg.message as ILog)
+							break
+						}
+						case 'INIT':
+							handleInit(msg.message as string)
+							break
+					}
+				})
+			} catch {
+				if (!disposed) reconnect = setTimeout(connectPanel, 1000)
+			}
 		}
+		connectPanel()
 
 		const unsubscribes = messageService.listen(
 			'PANEL',
 			(msg: IEventMessage) => {
+				// The port copy includes trusted source metadata; do not overwrite it with a broadcast.
+				if (port && msg.type === 'LOG') return
 				switch (msg.type) {
 					case 'LOG': {
 						const sourceTabId = msg.sourceTabId
@@ -131,6 +152,8 @@ export const usePanelListener = (
 		)
 
 		return () => {
+			disposed = true
+			clearTimeout(reconnect)
 			if (port) {
 				port.disconnect()
 			}

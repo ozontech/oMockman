@@ -5,9 +5,8 @@
  * A key is bound to the origin it was entered for. Pointing a connection at another host does
  * not carry the key along: it has to be entered again, so a changed baseURL cannot leak it.
  */
-import { STORE_KEY } from '@/background/store-access'
+import { libraryWriter } from '@/background/library-writer'
 import type { IAIProviderConfig } from '@/interface/ai'
-import type { IStore } from '@/interface/mock'
 import { canonicalOrigin } from '@/services/origin'
 
 export const SECRETS_KEY = 'mockman.extension.secrets'
@@ -109,9 +108,10 @@ type LegacyProvider = IAIProviderConfig & { apiKey?: unknown }
  * its place, and strips the key from the store. Safe to run on every worker start.
  */
 export async function migrateLegacyKeys(): Promise<void> {
-	const store = await storageGet<IStore>(STORE_KEY)
-	const providers = store?.ai?.providers
-	if (!store || !Array.isArray(providers)) return
+	await libraryWriter.migrate(async (store) => {
+	const ai = store?.ai
+	const providers = ai?.providers
+	if (!store || !ai || !Array.isArray(providers)) return
 
 	const legacy = (providers as LegacyProvider[]).filter((p) => typeof p?.apiKey === 'string')
 	if (legacy.length === 0) return
@@ -131,5 +131,6 @@ export async function migrateLegacyKeys(): Promise<void> {
 		const secret = secrets[provider.id]
 		return { ...stripped, apiKeyMask: secret ? maskKey(secret.key) : undefined }
 	})
-	await storageSet({ [STORE_KEY]: { ...store, ai: { ...store.ai, providers: migrated } } })
+	return { ...store, ai: { ...ai, providers: migrated } }
+	})
 }

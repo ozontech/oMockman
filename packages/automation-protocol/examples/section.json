@@ -1,0 +1,27 @@
+{
+  "scenarioKey": "examples/section",
+  "collection": {
+    "name": "section"
+  },
+  "mocks": [
+    {
+      "key": "first",
+      "method": "GET",
+      "url": "https://app.example.test/api/configuration",
+      "response": {
+        "status": 200,
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": "{\"features\": {\"returns\": true}, \"permissions\": [\"returns:read\"]}"
+      }
+    }
+  ],
+  "scenario": {
+    "enabled": false,
+    "rules": []
+  }
+}

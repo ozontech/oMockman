@@ -375,3 +375,6 @@ blob-report
 # build artifacts
 dist.zip
 mockman-firefox.xpi
+
+# Local release archives
+release/

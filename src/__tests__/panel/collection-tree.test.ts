@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
 
+import type { ICollectionTree } from '../../interface/collection'
+import type { IMockResponse } from '../../interface/mock'
+import { MethodEnum } from '../../interface'
+
 import {
 	normalizeCollectionTree,
 	appendMockToTree,
@@ -13,10 +17,7 @@ import {
 	isDescendantCollection,
 	removeCollectionFromTree,
 	ensureRootEntry,
-} from '../../panel/app/service/collection-tree'
-import type { ICollectionTree } from '../../interface/collection'
-import type { IMockResponse } from '../../interface/mock'
-import { MethodEnum } from '../../interface'
+} from '@/services/collection-tree'
 
 const createMock = (overrides: Partial<IMockResponse> = {}): IMockResponse => ({
 	createdOn: Date.now(),

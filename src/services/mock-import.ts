@@ -1,3 +1,6 @@
+import { importCollections } from './collection-archive'
+import type { CollectionArchive } from './collection-archive'
+
 import { safeNumberInt } from '@/services/number'
 import { buildMockPayload } from '@/panel/app/mocks/addMock/utils'
 import type { IMockResponse, IMockResponseRaw } from '@/interface/mock'
@@ -206,8 +209,30 @@ function parseBundle(
 export function classifyImport(
 	input: unknown,
 	options?: { strategy?: ImportStrategy },
-): { valid: IMockResponse[]; toFix: Array<Record<string, unknown>>; package?: MockmanExportBundle } {
+): { valid: IMockResponse[]; toFix: Array<Record<string, unknown>>; package?: MockmanExportBundle; rejection?: ImportRejection } {
 	const strategy: ImportStrategy = options?.strategy ?? 'strict'
+
+	// MCP archives describe cases, not individual mocks. Validate before coercing
+	// legacy formats, otherwise the entire archive becomes an empty repair draft.
+	if (isRecord(input) && ('bundles' in input || input.kind === 'collection_archive')) {
+		try {
+			const archive = input.kind === 'collection_archive' ? input.archive : input
+			const { store } = importCollections({}, archive as CollectionArchive, 'https://import.invalid', 'reject', '')
+			// UI import creates ordinary, inactive collections. Do not carry MCP grants
+			// or bind imported cases to an invented application origin.
+			for (const node of Object.values(store.collectionTree.nodes)) {
+				delete node.automation
+				delete node.task
+			}
+			const bundle: MockmanExportBundle = {
+				type: 'mockman.export', version: 1,
+				mocks: store.mocks, collectionTree: store.collectionTree,
+			}
+			return { valid: bundle.mocks, toFix: [], package: bundle }
+		} catch {
+			return { valid: [], toFix: [], rejection: { code: 'invalid_archive' } }
+		}
+	}
 
 	const parsedBundle = parseBundle(input, strategy)
 	if (parsedBundle) {
@@ -231,6 +256,7 @@ export const IMPORT_LIMITS = {
 } as const
 
 export type ImportRejectionCode =
+	| 'invalid_archive'
 	| 'source_too_large'
 	| 'invalid_json'
 	| 'nothing_to_import'
@@ -286,7 +312,9 @@ export function checkImportLimits(result: {
 	valid: IMockResponse[]
 	toFix: Array<Record<string, unknown>>
 	package?: MockmanExportBundle
+	rejection?: ImportRejection
 }): ImportRejection | null {
+	if (result.rejection) return result.rejection
 	const total = result.valid.length + result.toFix.length
 	if (total === 0) return { code: 'nothing_to_import' }
 	if (total > IMPORT_LIMITS.maxMocks) {

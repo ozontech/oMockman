@@ -2,13 +2,15 @@
   "manifest_version": 2,
   "name": "Mockman",
   "description": "Mock API responses and request bodies from a Logs / Mocks panel in DevTools.",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "browser_specific_settings": {
     "gecko": {
       "id": "{76a6f0da-6083-484c-848b-7488e124056f}",
-      "strict_min_version": "109.0",
+      "strict_min_version": "142.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     }
   },

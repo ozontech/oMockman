@@ -4,6 +4,9 @@ import type { BridgeContentMessage, BridgeInjectMessage, IBridgeMockAnswer } fro
 import { normalizeUrl } from '@/services/url'
 import { sendFromPage } from '@/inject/sender'
 
+let requestBodyNeeded = false
+export const needsRequestBody = async () => (await waitForPort()) && (await waitForGate()) && requestBodyNeeded
+
 const MATCH_TIMEOUT_MS = 1500
 const NEGATIVE_CACHE_LIMIT = 1000
 /** How long a request waits for the permission verdict before going to the network. */
@@ -66,6 +69,7 @@ function handleContentMessage(message: BridgeContentMessage): void {
 		return
 	}
 	if (message.k === 'gate') {
+		requestBodyNeeded = message.needsBody === true
 		gateOpen = message.open
 		// A grant made just now must not be masked by answers cached while it was closed.
 		if (!message.open) knownNotMocked.clear()
@@ -158,7 +162,7 @@ export function isLoggingEnabled(): boolean {
 }
 
 /** Resolves to null, i.e. go to the network, when the bridge is unavailable or too slow. */
-export async function resolveMock(method: string, url: string, logId?: string): Promise<IBridgeMockAnswer | null> {
+export async function resolveMock(method: string, url: string, logId?: string, body?: string): Promise<IBridgeMockAnswer | null> {
 	if (!(await waitForPort())) return null
 
 	const key = cacheKey(method, url)
@@ -187,7 +191,7 @@ export async function resolveMock(method: string, url: string, logId?: string): 
 
 		const timer = setTimeout(() => finish(null, false), MATCH_TIMEOUT_MS)
 		pending.set(id, (answer, noCache) => finish(answer, true, noCache))
-		post({ k: 'match', id, method: String(method || 'GET'), url: String(url || ''), logId })
+		post({ k: 'match', id, method: String(method || 'GET'), url: String(url || ''), logId, ...(body === undefined ? {} : { body }) })
 	})
 }
 

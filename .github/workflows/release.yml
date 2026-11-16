@@ -19,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run test:protocol
+      - run: npm run test:mcp
 
       - name: Tag matches package.json and both manifests
         run: |
@@ -32,8 +34,11 @@ jobs:
         run: |
           npm run build:chrome
           npm run build:firefox
-          (cd dist/chrome && zip -qr "../../omockman-chrome-${GITHUB_REF_NAME}.zip" .)
-          (cd dist/firefox && zip -qr "../../omockman-firefox-${GITHUB_REF_NAME}.xpi" .)
+          npm run build:mcp -- --release
+          npm run notices:check
+          npm run check:public
+          npm run test:mcp:artifact
+          node scripts/pack.mjs
 
       - name: Release notes from CHANGELOG.md
         run: |
@@ -49,5 +54,6 @@ jobs:
         with:
           body_path: release-notes.md
           files: |
-            omockman-chrome-${{ github.ref_name }}.zip
-            omockman-firefox-${{ github.ref_name }}.xpi
+            release/omockman-chrome-${{ github.ref_name }}.zip
+            release/omockman-firefox-${{ github.ref_name }}.xpi
+            release/omockman-mcp-${{ github.ref_name }}.zip
